@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- Windows 10 SDK target gives access to Windows location services (Windows.Devices.Geolocation). -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- Only for the system tray icon (NotifyIcon); WPF has none built in. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>OptimAdhan</AssemblyName>
+    <RootNamespace>OptimAdhan.App</RootNamespace>
+    <ApplicationIcon>Assets\Brand\optimadhan.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>OptimAdhan</Product>
+    <Company>Optim Square LLC</Company>
+    <Copyright>© Optim Square LLC</Copyright>
+    <Description>OptimAdhan — Your Daily Prayer Companion</Description>
+    <Version>0.2.0</Version>
+    <!-- Fluent theme in WPF is flagged experimental (WPF0001) but supported in .NET 10. -->
+    <!-- WFO0003: DPI awareness is declared in app.manifest because WPF, not WinForms, owns the windows. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Avoid ambiguities (Application, MessageBox, ...) between WPF and WinForms. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimAdhan.Core\OptimAdhan.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Audio and fonts ship as loose files so licensed recordings can replace them without a rebuild. -->
+    <Content Include="Assets\Audio\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Official brand artwork copied from assets/: app icon, dimensional symbol, tray crescents. -->
+    <Resource Include="Assets\Brand\*.ico" />
+    <Resource Include="Assets\Brand\symbol.png" />
+    <Resource Include="Assets\Fonts\Amiri-Regular.ttf" />
+  </ItemGroup>
+
+</Project>

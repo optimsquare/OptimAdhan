@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  OptimAdhan MSI (WiX v5). Per-user install: no administrator rights, installs to
+  %LocalAppData%\Programs\OptimAdhan. Build with tools/build-installer.ps1.
+
+  NEVER change the UpgradeCode: Windows uses it to recognise newer versions as upgrades.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="OptimAdhan"
+           Manufacturer="Optim Square LLC"
+           Version="$(Version)"
+           UpgradeCode="2E974DF3-989E-49C2-B189-E0A76B144388"
+           Scope="perUser"
+           Compressed="yes"
+           Language="1033">
+    <SummaryInformation Description="OptimAdhan — Your Daily Prayer Companion" Manufacturer="Optim Square LLC" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OptimAdhan is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://optimsquare.io" />
+    <Property Id="ARPCOMMENTS" Value="Your Daily Prayer Companion" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="OptimAdhan" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Application files (everything published, minus debug symbols). -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(PublishDir)\**">
+        <Exclude Files="$(PublishDir)\**\*.pdb" />
+      </Files>
+    </ComponentGroup>
+
+    <!-- Start menu shortcut. Not advertised, so Windows never "repairs" the install behind the user's back. -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut" Name="OptimAdhan" Description="Your Daily Prayer Companion"
+                  Target="[INSTALLFOLDER]OptimAdhan.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\Optim Square\OptimAdhan" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="CleanInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="CleanProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+      </Component>
+    </StandardDirectory>
+
+    <!--
+      Start at sign-in (on by default, matching the app's default setting). The app
+      adds or removes this value when the user changes the setting; uninstall removes it.
+    -->
+    <Component Id="RunAtSignIn" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="OptimAdhan"
+                     Type="string" Value="&quot;[INSTALLFOLDER]OptimAdhan.exe&quot; --background" KeyPath="yes" />
+    </Component>
+
+    <!-- Close a running OptimAdhan before files are replaced or removed. -->
+    <util:CloseApplication Id="CloseOptimAdhan" Target="OptimAdhan.exe" CloseMessage="yes" TerminateProcess="1"
+                           RebootPrompt="no" Timeout="5" />
+
+    <!-- Start the app when installation or upgrade finishes. -->
+    <CustomAction Id="LaunchApp" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]OptimAdhan.exe&quot;"
+                  Return="asyncNoWait" Impersonate="yes" />
+    <InstallExecuteSequence>
+      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT REMOVE" />
+    </InstallExecuteSequence>
+
+    <Feature Id="Main" Title="OptimAdhan" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="RunAtSignIn" />
+    </Feature>
+  </Package>
+</Wix>

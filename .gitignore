@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.wixpdb
+
+# IDE
+.vs/
+.vscode/
+*.user
+
+# The reference web app is its own repository and stays untouched.
+PrayerAndRamadan/
+
+# Internal notes that must not be published.
+private/

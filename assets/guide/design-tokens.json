@@ -1,0 +1,13 @@
+{
+  "brand": "OptimAdhan",
+  "colors": {
+    "background": "#07142D",
+    "surface": "#112644",
+    "accent": "#FFD65A",
+    "text": "#F6F1E7",
+    "muted": "#ADBAD0"
+  },
+  "fontFamily": "Segoe UI",
+  "spacingUnit": 8,
+  "cornerRadius": 16
+}

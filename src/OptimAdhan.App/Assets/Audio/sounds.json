@@ -1,0 +1,17 @@
+{
+  "_comment": "Sound library. Replace or add files here without rebuilding. Paths are relative to this folder. Supported: mp3, wav, m4a, wma.",
+  "adhan": [
+    { "id": "makkah", "name": "Makkah", "file": "Adhan/adhan-makkah.mp3", "fajr": false },
+    { "id": "madina", "name": "Madinah", "file": "Adhan/adhan-madina.mp3", "fajr": false }
+  ],
+  "reminders": {
+    "sehri_15_min_before": "Reminders/sehri_15_min_before.wav",
+    "sehri_10_min_before": "Reminders/sehri_10_min_before.wav",
+    "sehri_5_min_before": "Reminders/sehri_5_min_before.wav",
+    "sehri_1_min_before": "Reminders/sehri_1_min_before.wav",
+    "sehri_end": "Reminders/sehri_end.wav",
+    "iftar_10_min_before": "Reminders/iftar_10_min_before.wav",
+    "iftar_5_min_before": "Reminders/iftar_5_min_before.wav",
+    "iftar_1_min_before": "Reminders/iftar_1_min_before.wav"
+  }
+}

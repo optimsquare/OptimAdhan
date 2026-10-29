@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OptimAdhan.App/OptimAdhan.App.csproj" />
+    <Project Path="src/OptimAdhan.Core/OptimAdhan.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OptimAdhan.Core.Tests/OptimAdhan.Core.Tests.csproj" />
+  </Folder>
+</Solution>
