@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using OptimAdhan.App.Services;
@@ -69,6 +69,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        AlertPopup.CloseCurrent();
         _tray?.Dispose();
         _controller?.Dispose();
         _instance?.Dispose();
@@ -133,14 +134,8 @@ public partial class App : Application
     private void OnAlertRaised(object? sender, AlertOccurrence occurrence)
     {
         var settings = _controller!.Settings;
-        if (occurrence.Alert.Kind == AlertKind.PrayerReminder)
+        if (occurrence.Alert.Kind == AlertKind.PrayerReminder && !settings.Adhan.ShowNotifications)
         {
-            if (settings.Adhan.ShowNotifications)
-            {
-                var (title, body) = AlertText.For(occurrence, _controller);
-                _tray?.ShowNotification(title, body);
-            }
-
             return;
         }
 

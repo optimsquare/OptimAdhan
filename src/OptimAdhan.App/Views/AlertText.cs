@@ -11,24 +11,17 @@ public static class AlertText
     {
         var alert = occurrence.Alert;
         var use24 = app.Settings.Use24HourClock;
-        var place = app.Schedule?.Location.DisplayName ?? "";
         var at = Format.Time(app.Schedule?.ToLocal(alert.Utc), use24);
         var name = alert.Prayer is { } p ? PrayerNames.English(p) : "";
-
-        if (alert.IsTest)
-        {
-            return ($"Test: it is time for {name}",
-                $"This is how the Adhan alert looks and sounds at prayer time. Volume {app.Settings.Adhan.Volume}%.");
-        }
 
         return alert.Kind switch
         {
             AlertKind.Adhan when occurrence.Delivery == AlertDelivery.Missed =>
-                ($"{name} began at {at}", $"The Adhan was not played because your PC was asleep or off. {place}"),
+                ($"{name} began at {at}", "Adhan not played: your PC was asleep or off"),
             AlertKind.Adhan =>
-                ($"It's time for {name}", $"Adhan at {at} · {place}"),
+                ($"It's time for {name}", "Adhan is playing"),
             AlertKind.PrayerReminder =>
-                ($"{name} in {alert.MinutesBefore} minutes", $"{name} begins at {Format.Time(app.Schedule?.ToLocal(alert.Utc.AddMinutes(alert.MinutesBefore)), use24)} · {place}"),
+                ($"{name} in {alert.MinutesBefore} minutes", $"{name} begins at {Format.Time(app.Schedule?.ToLocal(alert.Utc.AddMinutes(alert.MinutesBefore)), use24)}"),
             AlertKind.SehriReminder => alert.MinutesBefore switch
             {
                 0 => ("Sehri has ended", "The fast begins now."),
