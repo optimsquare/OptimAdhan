@@ -58,9 +58,16 @@
         <GradientStop Color="#E0132A4E" Offset="0" />
         <GradientStop Color="#D90D1F42" Offset="1" />
     </LinearGradientBrush>
-    <LinearGradientBrush x:Key="CardStrokeBrush" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#33FFFFFF" Offset="0" />
-        <GradientStop Color="#0DFFFFFF" Offset="1" />
+    <!-- Glass edge: a bright specular top edge fading to a faint emerald-tinted bottom. -->
+    <LinearGradientBrush x:Key="CardStrokeBrush" StartPoint="0,0" EndPoint="0.2,1">
+        <GradientStop Color="#4DFFFFFF" Offset="0" />
+        <GradientStop Color="#12FFFFFF" Offset="0.45" />
+        <GradientStop Color="#1F2BB58A" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CardStrokeHoverBrush" StartPoint="0,0" EndPoint="0.2,1">
+        <GradientStop Color="#80FFFFFF" Offset="0" />
+        <GradientStop Color="#26FFFFFF" Offset="0.45" />
+        <GradientStop Color="#402BB58A" Offset="1" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="HeroFillBrush" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="#F01E3E78" Offset="0" />
@@ -114,6 +121,21 @@
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="ArabicFont">pack://application:,,,/Assets/Fonts/#Amiri</FontFamily>
+
+    <!--
+      Arabic names: Amiri (a classical Naskh face), right-to-left, tagged as Arabic for
+      correct shaping. Amiri's tall ascenders and deep descenders (1.12 / 0.63 em) would
+      otherwise inflate rows, so line height is fixed relative to the size used.
+    -->
+    <Style x:Key="ArabicText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource ArabicFont}" />
+        <Setter Property="Foreground" Value="{StaticResource ChampagneBrush}" />
+        <Setter Property="FlowDirection" Value="RightToLeft" />
+        <Setter Property="Language" Value="ar" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
 
     <Style x:Key="DisplayText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />

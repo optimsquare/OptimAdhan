@@ -44,6 +44,8 @@ public partial class WidgetWindow : Window
         _app.SettingsChanged += OnSettingsChanged;
 
         SourceInitialized += (_, _) => ApplyMaterial();
+        ProgressTrack.SizeChanged += (_, _) => UpdateProgress();
+        CompactProgressTrack.SizeChanged += (_, _) => UpdateProgress();
         Loaded += (_, _) =>
         {
             ApplySettings();
@@ -136,7 +138,7 @@ public partial class WidgetWindow : Window
 
         // "Glass tint" (0.4–1.0) sets how strongly the panel covers the blurred wallpaper.
         // Even the lightest setting keeps enough tint for readable text on bright wallpapers.
-        var alpha = _hasBackdrop ? (byte)Math.Round(255 * (0.55 + 0.42 * Math.Clamp((w.Opacity - 0.4) / 0.6, 0, 1))) : (byte)255;
+        var alpha = _hasBackdrop ? (byte)Math.Round(255 * (0.52 + 0.44 * Math.Clamp((w.Opacity - 0.4) / 0.6, 0, 1))) : (byte)255;
         TintStart.Color = Color.FromArgb(alpha, 0x0A, 0x2A, 0x30);
         TintMid.Color = Color.FromArgb(alpha, 0x0B, 0x1C, 0x3C);
         TintEnd.Color = Color.FromArgb(alpha, 0x07, 0x14, 0x2D);

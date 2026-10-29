@@ -28,7 +28,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                                <Setter TargetName="Bd" Property="Background" Value="#24FFD65A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#14FFD65A" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -40,6 +43,11 @@
         <DataTemplate x:Key="StripItem">
             <Border x:Name="Sep" BorderBrush="#24FFFFFF" BorderThickness="1,0,0,0" Padding="0,2">
                 <Border x:Name="Pill" CornerRadius="10" Margin="6,0" Padding="6,6" Background="Transparent">
+                    <Border.ToolTip>
+                        <TextBlock>
+                            <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding Arabic, Mode=OneWay}" FontFamily="{StaticResource ArabicFont}" FontSize="15" /><Run Text="  ·  " /><Run Text="{Binding TimeText, Mode=OneWay}" />
+                        </TextBlock>
+                    </Border.ToolTip>
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock x:Name="Name" Text="{Binding Name}" FontSize="12" HorizontalAlignment="Center" Foreground="#D9F6F1E7" />
                         <TextBlock x:Name="Time" Text="{Binding TimeText}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,2,0,0"
@@ -48,6 +56,9 @@
                 </Border>
             </Border>
             <DataTemplate.Triggers>
+                <Trigger SourceName="Pill" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Pill" Property="Background" Value="#17FFFFFF" />
+                </Trigger>
                 <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
                     <Setter TargetName="Sep" Property="BorderThickness" Value="0" />
                 </DataTrigger>
@@ -97,12 +108,33 @@
                 </RadialGradientBrush>
             </Border.Background>
         </Border>
-        <Border IsHitTestVisible="False" BorderThickness="1" CornerRadius="8">
+        <!-- Specular top edge: a thin bright line fading out to both sides. -->
+        <Border IsHitTestVisible="False" Height="1" VerticalAlignment="Top" Margin="18,1,18,0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#00FFFFFF" Offset="0" />
+                    <GradientStop Color="#8CFFFFFF" Offset="0.3" />
+                    <GradientStop Color="#40FFFFFF" Offset="0.7" />
+                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+        <Border x:Name="Edge" IsHitTestVisible="False" BorderThickness="1" CornerRadius="8">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Opacity" Value="0.8" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=Root}" Value="True">
+                            <Setter Property="Opacity" Value="1" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Border.BorderBrush>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0.3,1">
-                    <GradientStop Color="#66FFFFFF" Offset="0" />
-                    <GradientStop Color="#14FFFFFF" Offset="0.5" />
-                    <GradientStop Color="#2E2BB58A" Offset="1" />
+                    <GradientStop Color="#80FFFFFF" Offset="0" />
+                    <GradientStop Color="#1AFFFFFF" Offset="0.5" />
+                    <GradientStop Color="#472BB58A" Offset="1" />
                 </LinearGradientBrush>
             </Border.BorderBrush>
         </Border>
@@ -118,23 +150,33 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
-            <DockPanel>
-                <Button DockPanel.Dock="Right" Style="{StaticResource WidgetIconButton}" Click="OnSettings" ToolTip="Settings" AutomationProperties.Name="Open settings">
+            <!-- Header: brand | place and date (trims when long) | settings -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="22" Height="22" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Text="OptimAdhan" Margin="8,0,0,0" FontFamily="{StaticResource DisplayFont}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource GoldBrush}" VerticalAlignment="Center" />
+                    <Border Width="1" Height="14" Background="#40FFFFFF" Margin="14,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <DockPanel Grid.Column="1" VerticalAlignment="Center" LastChildFill="True" Margin="0,0,10,0">
+                    <Path DockPanel.Dock="Left" Data="{StaticResource IconPin}" Width="13" Height="13" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}"
+                          StrokeThickness="1.7" VerticalAlignment="Center" />
+                    <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" FontSize="12" Foreground="#CCF6F1E7" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular">
+                        <Run Text="{Binding GregorianShort, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding ClockShort, Mode=OneWay}" />
+                    </TextBlock>
+                    <TextBlock Text="{Binding City}" Margin="6,0,0,0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" ToolTip="{Binding LocationName}" />
+                </DockPanel>
+                <Button Grid.Column="2" Style="{StaticResource WidgetIconButton}" Click="OnSettings" ToolTip="Settings" AutomationProperties.Name="Open settings">
                     <Path Data="{StaticResource IconSettings}" Width="16" Height="16" Stretch="Uniform" Stroke="#E6F6F1E7" StrokeThickness="1.6"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                 </Button>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="20" Height="20" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Text="OptimAdhan" Margin="8,0,0,0" FontFamily="{StaticResource DisplayFont}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" VerticalAlignment="Center" />
-                    <Border Width="1" Height="14" Background="#40FFFFFF" Margin="12,0" VerticalAlignment="Center" />
-                    <Path Data="{StaticResource IconPin}" Width="13" Height="13" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.7" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding City}" Margin="6,0,0,0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <TextBlock Margin="10,0,0,0" FontSize="12" Foreground="#CCF6F1E7" VerticalAlignment="Center">
-                        <Run Text="{Binding GregorianShort, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding ClockShort, Mode=OneWay}" />
-                    </TextBlock>
-                </StackPanel>
-            </DockPanel>
+            </Grid>
 
             <!-- Artwork + next prayer -->
             <Grid Grid.Row="1" Margin="0,12,0,12">
@@ -157,8 +199,7 @@
                     <TextBlock Text="NEXT PRAYER" Style="{StaticResource Overline}" FontSize="11.5" />
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                         <TextBlock Text="{Binding NextName}" FontFamily="{StaticResource DisplayFont}" FontSize="36" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding NextArabic}" FontFamily="{StaticResource ArabicFont}" FontSize="28" Foreground="{StaticResource ChampagneBrush}"
-                                   Margin="14,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding NextArabic}" Style="{StaticResource ArabicText}" FontSize="30" LineHeight="40" Margin="14,4,0,0" />
                     </StackPanel>
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>

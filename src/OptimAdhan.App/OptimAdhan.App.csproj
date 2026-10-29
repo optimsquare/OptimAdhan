@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -41,6 +41,8 @@
     <Resource Include="Assets\Brand\*.ico" />
     <Resource Include="Assets\Brand\symbol.png" />
     <Resource Include="Assets\Fonts\Amiri-Regular.ttf" />
+    <!-- Amiri 1.003 (SIL OFL 1.1): the licence must travel with the font. -->
+    <Content Include="Assets\Fonts\OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -93,9 +93,23 @@ public static class Format
             ? $"{(int)span.TotalHours} h {span.Minutes} min"
             : $"{Math.Max(1, (int)Math.Ceiling(span.TotalMinutes))} min";
 
-    /// <summary>"1h 38m", or "14:52" in the final hour: changes about once a minute most of the day.</summary>
-    public static string CompactCountdown(TimeSpan span) =>
-        span.TotalHours >= 1 ? $"{(int)span.TotalHours}h {span.Minutes:00}m" : Countdown(span);
+    /// <summary>
+    /// Widget countdown: "1h 38m", then "47 min", then "9:42" with live seconds only in the
+    /// final ten minutes. Always exact to the displayed unit (whole minutes are floored, so it
+    /// never shows a prayer as later than it is), and it changes at most once a minute until
+    /// the last ten, which keeps the widget's redraws, and CPU, minimal.
+    /// </summary>
+    public static string CompactCountdown(TimeSpan span)
+    {
+        if (span < TimeSpan.Zero)
+        {
+            span = TimeSpan.Zero;
+        }
+
+        return span.TotalHours >= 1 ? $"{(int)span.TotalHours}h {span.Minutes:00}m"
+            : span.TotalMinutes >= 10 ? $"{(int)span.TotalMinutes} min"
+            : Countdown(span);
+    }
 
     /// <summary>"UTC+6", "UTC+5:30", "UTC−4".</summary>
     public static string Offset(TimeSpan offset)
@@ -358,6 +372,13 @@ public sealed class Dashboard : Observable
                 CurrentDetail = cp.Prayer == Prayer.Sunrise
                     ? $"Fajr ended at sunrise, {Format.Time(cp.Time, use24)}. {NextName} begins in {Format.ShortCountdown(left)}."
                     : $"Began {Format.Time(cp.Time, use24)}. {NextName} begins in {Format.ShortCountdown(left)}.";
+            }
+            else
+            {
+                // No earlier time to measure from (some times could not be calculated): show no progress
+                // rather than a stale value.
+                Progress = 0;
+                CurrentTitle = CurrentDetail = "";
             }
         }
         else

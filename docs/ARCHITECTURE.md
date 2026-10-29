@@ -131,7 +131,13 @@ keys in the app**. Network use: Nominatim (place names) only.
     Mica was tried and dropped because the native caption buttons showed through it.
 - **Motion:** 220 ms page fade, 140 ms switch thumb, 260 ms alert rise, nothing that loops. All of it is
   skipped when Windows animation effects are off.
-- **Redraws:** the widget wakes once a minute, and every second only during a countdown's final hour.
+- **Redraws:** the widget countdown reads "1h 38m", then "47 min", then "9:42" with live seconds
+  only in the final ten minutes. So the widget wakes on each minute boundary and ticks every second
+  only in those ten minutes. Minutes are floored, so the countdown never shows a prayer as later
+  than it is.
+- **Arabic:** prayer names use Amiri 1.003 (SIL OFL; the licence ships beside it as `OFL.txt`)
+  through the `ArabicText` style: right-to-left, tagged as Arabic, fixed line height. The font copied
+  from the web app was a 2-byte placeholder, so earlier builds silently fell back to a system font.
   The progress ring redraws only when its value changes.
 - **Accessibility:** gold focus rings on every control, automation names on icon buttons, contrast-checked
   text colours, and the main window reflows for small or high-scaling screens (minimum 820×580 DIP).
@@ -149,7 +155,8 @@ v0.2 (redesign), same machine and method:
 |---|---|---|
 | Startup to main window visible | — | 0.83 s |
 | Tray only, widget hidden | 0.00 % | 21 MB |
-| Widget visible (acrylic glass) | 0.08 % | 34 MB |
+| Widget visible (acrylic glass), minute updates | 0.08–0.18 % | 34–35 MB |
+| Widget, final 10 minutes before a prayer (seconds) | about 1.7 % | 42 MB |
 | Main window open on Today (live seconds countdown) | 1.8 % | 53 MB |
 
 The widget shows seconds only during the final hour before a prayer, so it redraws about

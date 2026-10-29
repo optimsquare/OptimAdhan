@@ -449,8 +449,7 @@ public partial class MainWindow : Window
             label.Children.Add(new TextBlock { Text = PrayerNames.English(prayer), FontWeight = FontWeights.SemiBold, Width = 76, VerticalAlignment = VerticalAlignment.Center });
             label.Children.Add(new TextBlock
             {
-                Text = PrayerNames.Arabic(prayer), FontFamily = (FontFamily)FindResource("ArabicFont"), FontSize = 17,
-                Foreground = (Brush)FindResource("ChampagneBrush"), VerticalAlignment = VerticalAlignment.Center,
+                Text = PrayerNames.Arabic(prayer), Style = (Style)FindResource("ArabicText"), FontSize = 18, LineHeight = 24,
             });
             var adhan = new CheckBox { Content = "Adhan", Margin = new Thickness(0, 6, 24, 6) };
             AutomationProperties.SetName(adhan, $"{PrayerNames.English(prayer)} Adhan");
