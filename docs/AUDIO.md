@@ -57,8 +57,13 @@ changing that, so it was not used.
 A plain `.mp3`/`.wav` listed in `sounds.json` also plays, with no packing and no rebuild, for example to
 try out a licensed recording.
 
-## Before public distribution
+## Rights holders
 
-The bundled recordings came from public Adhan sites; their licences have not been confirmed. Get written
-permission or licensed replacements before a public release. The source files are git-ignored for
-that reason.
+The Adhan recordings in OptimAdhan come from publicly available Adhan collections. We are contacting
+the rights holders to confirm permission and the credit they would like. The original source files are
+not kept in this repository.
+
+**If you hold the rights to one of these recordings**, please
+[open an issue](https://github.com/optimsquare/OptimAdhan/issues/new) or contact us through
+[optimsquare.io](https://optimsquare.io). We will add the credit you ask for, or remove the recording in
+the next update.

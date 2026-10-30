@@ -173,6 +173,10 @@ Third-party components keep their own licences: the prayer-time algorithms are p
 [Amiri](https://github.com/aliftype/amiri) font (SIL OFL 1.1); place names © OpenStreetMap contributors
 via Nominatim.
 
+The Adhan recordings belong to their respective rights holders and are not covered by the notice above.
+If you hold the rights to one of them, see [docs/AUDIO.md](docs/AUDIO.md#rights-holders): we will credit or
+remove it.
+
 ---
 
 <p align="center">
