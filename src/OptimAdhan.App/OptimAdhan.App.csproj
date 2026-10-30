@@ -18,7 +18,9 @@
     <Company>Optim Square LLC</Company>
     <Copyright>© Optim Square LLC</Copyright>
     <Description>OptimAdhan — Your Daily Prayer Companion</Description>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
+    <!-- The app is English-only: skip the framework's localized resource folders (about 13 languages each for WPF and WinForms). -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- Fluent theme in WPF is flagged experimental (WPF0001) but supported in .NET 10. -->
     <!-- WFO0003: DPI awareness is declared in app.manifest because WPF, not WinForms, owns the windows. -->
     <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>

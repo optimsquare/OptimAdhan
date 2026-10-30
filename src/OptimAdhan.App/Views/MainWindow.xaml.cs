@@ -1054,7 +1054,7 @@ public partial class MainWindow : Window
 
         foreach (var prayer in new[] { Prayer.Fajr, Prayer.Sunrise, Prayer.Dhuhr, Prayer.Asr, Prayer.Maghrib, Prayer.Isha })
         {
-            var box = new TextBox { Width = 64, Margin = new Thickness(0, 4, 10, 0), HorizontalContentAlignment = HorizontalAlignment.Center };
+            var box = new TextBox { Width = 56, Margin = new Thickness(0, 4, 10, 0), HorizontalContentAlignment = HorizontalAlignment.Center };
             AutomationProperties.SetName(box, $"{PrayerNames.English(prayer)} adjustment in minutes");
             box.LostFocus += OnCalculationChanged;
             var cell = new StackPanel();
@@ -1070,16 +1070,16 @@ public partial class MainWindow : Window
         foreach (var prayer in PrayerScheduleService.FivePrayers)
         {
             PerPrayerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 0) };
             label.Children.Add(new TextBlock { Text = PrayerNames.English(prayer), FontWeight = FontWeights.SemiBold, Width = 76, VerticalAlignment = VerticalAlignment.Center });
             label.Children.Add(new TextBlock
             {
                 Text = PrayerNames.Arabic(prayer), Style = (Style)FindResource("ArabicText"), FontSize = 18, LineHeight = 24,
             });
-            var adhan = new CheckBox { Content = "Adhan", Margin = new Thickness(0, 6, 24, 6) };
+            var adhan = new CheckBox { Content = "Adhan", Margin = new Thickness(0, 6, 16, 6) };
             AutomationProperties.SetName(adhan, $"{PrayerNames.English(prayer)} Adhan");
             adhan.Click += OnAdhanChanged;
-            var reminder = new ComboBox { ItemsSource = reminderOptions, Margin = new Thickness(0, 6, 0, 6), MinWidth = 210, HorizontalAlignment = HorizontalAlignment.Right };
+            var reminder = new ComboBox { ItemsSource = reminderOptions, Margin = new Thickness(0, 6, 0, 6), MinWidth = 180, HorizontalAlignment = HorizontalAlignment.Right };
             AutomationProperties.SetName(reminder, $"{PrayerNames.English(prayer)} reminder");
             reminder.SelectionChanged += OnAdhanChanged;
             Grid.SetRow(label, row);

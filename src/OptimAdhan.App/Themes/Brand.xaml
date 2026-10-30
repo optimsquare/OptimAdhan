@@ -668,6 +668,11 @@
     <PathGeometry x:Key="IconChevronDown" Figures="M6,9 L12,15 L18,9" />
     <PathGeometry x:Key="IconGlobe" Figures="M12,3 A9,9 0 1 0 12.01,3 M3,12 H21 M12,3 C8.8,6.5 8.8,17.5 12,21 M12,3 C15.2,6.5 15.2,17.5 12,21" />
     <PathGeometry x:Key="IconFeedback" Figures="M5,4 H19 A2,2 0 0 1 21,6 V15 A2,2 0 0 1 19,17 H10 L5,21 V17 A2,2 0 0 1 3,15 V6 A2,2 0 0 1 5,4 Z M12,7.5 V11.5 M12,14 V14.1" />
+    <PathGeometry x:Key="IconBell" Figures="M6,16.5 V11 A6,6 0 0 1 18,11 V16.5 L19.5,18.5 H4.5 Z M10,21 H14" />
+    <PathGeometry x:Key="IconPower" Figures="M12,3 V11 M7.1,6.4 A7.5,7.5 0 1 0 16.9,6.4" />
+    <PathGeometry x:Key="IconShield" Figures="M12,3 L19,6 V11.5 C19,16 16,19.5 12,21 C8,19.5 5,16 5,11.5 V6 Z M9,12 L11,14 L15,10" />
+    <PathGeometry x:Key="IconDocument" Figures="M7,3 H14 L19,8 V19 A2,2 0 0 1 17,21 H7 A2,2 0 0 1 5,19 V5 A2,2 0 0 1 7,3 Z M14,3 V8 H19 M9,13 H15 M9,17 H13" />
+    <PathGeometry x:Key="IconFolder" Figures="M4,6 A2,2 0 0 1 6,4 H10 L12,6.5 H18 A2,2 0 0 1 20,8.5 V18 A2,2 0 0 1 18,20 H6 A2,2 0 0 1 4,18 Z" />
 
     <!-- Full-width option row (About page links and the Zelle disclosure): a glass tile with hover and focus states. -->
     <Style x:Key="OptionRow" TargetType="ButtonBase">

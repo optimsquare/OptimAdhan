@@ -1,5 +1,5 @@
 # Builds the OptimAdhan MSI: runs the tests, publishes the app, then packages it with WiX v5.
-# Prerequisites: .NET 10 SDK; WiX v5 tool (dotnet tool install -g wix --version 5.0.2) with
+# The MSI needs no prerequisites on the user's PC. Build prerequisites: .NET 10 SDK; WiX v5 tool (dotnet tool install -g wix --version 5.0.2) with
 # the Util extension (wix extension add -g WixToolset.Util.wixext/5.0.2).
 # Usage (from the workspace root):  powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 param([switch] $SkipTests)
@@ -22,7 +22,10 @@ if (-not $SkipTests) {
 
 Write-Host "== Publishing OptimAdhan $version" -ForegroundColor Cyan
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
-dotnet publish $appProject -c Release -r win-x64 --self-contained false -o $publishDir --nologo
+# Self-contained: the .NET 10 runtime (with WPF and WinForms) ships inside the app folder, so nothing
+# needs to be installed first. Not trimmed (WPF does not support trimming) and not single-file
+# (loose files start faster and compress well in the MSI cabinet).
+dotnet publish $appProject -c Release -r win-x64 --self-contained true -p:DebugType=none -o $publishDir --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
 Write-Host '== Building MSI' -ForegroundColor Cyan

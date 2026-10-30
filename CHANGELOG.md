@@ -3,6 +3,27 @@
 All notable changes to OptimAdhan. Versions follow `<Version>` in `src/OptimAdhan.App/OptimAdhan.App.csproj`,
 which also names the installer.
 
+## 0.3.1 — 2026-10-30
+
+### Installer: no prerequisites
+- The installer is now self-contained: the .NET 10 runtime (including WPF and WinForms) is bundled in
+  the app folder, so OptimAdhan installs and starts with nothing else on the PC. Previously Windows
+  asked users to download the .NET 10 Desktop Runtime first.
+- The MSI is about 63 MB (0.3.0 was 10 MB). Unused framework translations and debug symbols are left out.
+- Same upgrade code, so it replaces 0.3.0; install location, shortcuts, sign-in entry and settings are unchanged.
+
+### Settings and About layout
+- Settings and About now use the window's width: cards sit in two columns when there is room
+  (sidebar collapsed, larger or maximized windows) and fall back to one column, in reading order, on
+  smaller windows. Content is capped at the same 1240 px as Today and centred; cards keep their natural
+  height and are never stretched.
+- Settings cards share one header style (icon, title, one-line hint): Location, Prayer times,
+  Adhan and sounds, Notifications, Ramadan, Desktop widget and Windows startup. Every setting is unchanged;
+  advanced options stay in the Fine-tune and coordinates expanders.
+- About: full-width brand header with feature badges, then Support Our Work beside Developer & Support
+  and Privacy. Licences and acknowledgments fold into an expander. Zelle QR and PayPal link unchanged.
+- New screenshots of every page and the widget in `docs/screenshots`.
+
 ## 0.3.0 — 2026-10-29
 
 ### About page and Support Our Work

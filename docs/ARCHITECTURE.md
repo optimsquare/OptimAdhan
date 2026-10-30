@@ -99,8 +99,10 @@ Notification Center and is not silenced by Focus Assist. That matters for the Ad
 A WiX v5 **MSI** (`installer/Package.wxs`, built by `tools/build-installer.ps1`), installed
 per user to `%LocalAppData%\Programs\OptimAdhan` with no admin rights. It adds a Start menu
 shortcut and the sign-in entry, closes a running copy before upgrading or uninstalling,
-starts the app when done, and uninstalls cleanly. The app is framework-dependent on the
-.NET 10 Desktop Runtime: 9 MB, against 204 MB uncompressed for a self-contained build. Code signing,
+starts the app when done, and uninstalls cleanly. Since 0.3.1 the app is **self-contained**:
+the .NET 10 runtime, WPF and WinForms ship in the install folder, so users install nothing first and
+a machine-wide .NET is never used. The MSI is about 63 MB (186 MB installed). Trimming is not available
+for WPF; English-only satellite resources and no debug symbols keep it as small as it can be. Code signing,
 auto-update and Microsoft Store are planned for later versions.
 
 ### D10. Settings and privacy

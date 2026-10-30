@@ -154,6 +154,27 @@
         <Style x:Key="SettingsRow" TargetType="Grid">
             <Setter Property="Margin" Value="0,14,0,0" />
         </Style>
+        <!-- Settings and About cards open with an icon tile, a title and a one-line hint. -->
+        <Style x:Key="CardIconTile" TargetType="Border" BasedOn="{StaticResource RowIconTile}">
+            <Setter Property="Width" Value="42" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+        </Style>
+        <Style x:Key="CardTitle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitle}">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style x:Key="FeaturePill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="Margin" Value="0,0,8,6" />
+            <Setter Property="Background" Value="{StaticResource EmeraldFaintBrush}" />
+            <Setter Property="BorderBrush" Value="#402BB58A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="TextBlock.FontSize" Value="12" />
+            <Setter Property="TextBlock.FontWeight" Value="SemiBold" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource EmeraldSoftBrush}" />
+        </Style>
     </Window.Resources>
 
     <Border x:Name="RootBorder" Background="{StaticResource MidnightBrush}">
@@ -670,9 +691,10 @@
                                        Text="Dates follow the Umm al-Qura calendar. If your community begins Ramadan by local moonsighting, shift the Hijri date in Settings › Prayer times › Fine-tune and this table moves with it." />
                         </Grid>
 
-                        <!-- ═════════════ SETTINGS ═════════════ -->
+                        <!-- ═════════════ SETTINGS ═════════════
+                             Two columns of cards when the page is wide enough, one column in reading order when not. -->
                         <ScrollViewer x:Name="SettingsPage" Style="{StaticResource PageScroller}" Visibility="Collapsed">
-                            <StackPanel Margin="32,4,32,40" MaxWidth="880" HorizontalAlignment="Left">
+                            <StackPanel Margin="32,4,32,40" MaxWidth="1240">
                                 <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
                                 <TextBlock Text="Changes are saved automatically." Style="{StaticResource Hint}" Margin="0,4,0,18" />
 
@@ -687,396 +709,468 @@
                                     </DockPanel>
                                 </Border>
 
-                                <!-- Location -->
-                                <Border Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <DockPanel>
-                                            <Button x:Name="DetectButton" DockPanel.Dock="Right" Click="OnDetectLocation" VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Path Data="{StaticResource IconPin}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.7" />
-                                                    <TextBlock Text="Detect my location" Margin="8,0,0,0" />
-                                                </StackPanel>
-                                            </Button>
-                                            <Border Width="44" Height="44" CornerRadius="12" Background="{StaticResource GoldFaintBrush}" Margin="0,0,14,0">
-                                                <Path Data="{StaticResource IconPin}" Width="20" Height="20" Stretch="Uniform" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.7" />
-                                            </Border>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock x:Name="CurrentLocationText" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                                <TextBlock x:Name="CurrentLocationDetail" Style="{StaticResource Hint}" Margin="0,2,0,0" />
-                                            </StackPanel>
-                                        </DockPanel>
-                                        <TextBlock Text="Or search for a city" Style="{StaticResource Caption}" Margin="0,18,0,6" />
-                                        <DockPanel>
-                                            <Button x:Name="SearchButton" DockPanel.Dock="Right" Content="Search" Style="{StaticResource PrimaryButton}" Click="OnSearch" Margin="8,0,0,0" />
-                                            <TextBox x:Name="SearchBox" KeyDown="OnSearchKeyDown" AutomationProperties.Name="Search for a city" ToolTip="City, town or address, then press Enter" />
-                                        </DockPanel>
-                                        <TextBlock x:Name="LocationMessage" Style="{StaticResource Caption}" Margin="0,8,0,0" />
-                                        <ListBox x:Name="SearchResults" MaxHeight="200" Margin="0,8,0,0" Visibility="Collapsed" DisplayMemberPath="DisplayName"
-                                                 MouseDoubleClick="OnUseSearchResult" Background="#33061026" BorderThickness="0" />
-                                        <Button x:Name="UseResultButton" Content="Use selected place" Style="{StaticResource PrimaryButton}" Click="OnUseSearchResult"
-                                                HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="Collapsed" />
-                                        <Expander Header="Enter coordinates instead" Margin="0,12,0,0">
-                                            <WrapPanel Margin="0,10,0,0">
-                                                <TextBlock Text="Latitude" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
-                                                <TextBox x:Name="LatBox" Width="120" AutomationProperties.Name="Latitude" />
-                                                <TextBlock Text="Longitude" Style="{StaticResource FieldLabel}" Margin="18,0,10,0" />
-                                                <TextBox x:Name="LonBox" Width="120" AutomationProperties.Name="Longitude" />
-                                                <Button Content="Apply" Click="OnApplyCoordinates" Margin="12,0,0,0" />
-                                            </WrapPanel>
-                                        </Expander>
-                                        <TextBlock Style="{StaticResource Hint}" Margin="0,12,0,0"
-                                                   Text="Only place names come from OpenStreetMap. Prayer times are calculated on this PC and work offline." />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Prayer times -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Prayer times" Style="{StaticResource SectionTitle}" />
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="340" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Margin="0,0,16,0">
-                                                <TextBlock Text="Calculation method" Style="{StaticResource FieldLabel}" />
-                                                <TextBlock x:Name="MethodHint" Style="{StaticResource Hint}" Text="Match the method your local masjid uses." />
-                                            </StackPanel>
-                                            <ComboBox x:Name="MethodBox" Grid.Column="1" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Calculation method" />
-                                        </Grid>
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Margin="0,0,16,0">
-                                                <TextBlock Text="Asr time" Style="{StaticResource FieldLabel}" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Standard (Shafi, Maliki, Hanbali) or Hanafi, which is later in the afternoon." />
-                                            </StackPanel>
-                                            <Border Grid.Column="1" Style="{StaticResource SegmentHost}" VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <RadioButton x:Name="MadhabStandard" Style="{StaticResource Segment}" GroupName="Madhab" Content="Standard" Checked="OnCalculationChanged" />
-                                                    <RadioButton x:Name="MadhabHanafi" Style="{StaticResource Segment}" GroupName="Madhab" Content="Hanafi" Checked="OnCalculationChanged" />
-                                                </StackPanel>
-                                            </Border>
-                                        </Grid>
-                                        <Expander Margin="0,18,0,0">
-                                            <Expander.Header>
-                                                <StackPanel>
-                                                    <TextBlock Text="Fine-tune" FontWeight="SemiBold" />
-                                                    <TextBlock Style="{StaticResource Hint}" Text="Match your masjid to the minute, adjust the Hijri date, high-latitude rules" />
-                                                </StackPanel>
-                                            </Expander.Header>
-                                            <StackPanel Margin="0,8,0,0">
-                                                <TextBlock Text="Adjust minutes" Style="{StaticResource FieldLabel}" Margin="0,8,0,4" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Add or subtract minutes from each calculated time." />
-                                                <UniformGrid x:Name="AdjustmentsGrid" Columns="6" Margin="0,8,0,0" HorizontalAlignment="Left" />
-                                                <Grid Style="{StaticResource SettingsRow}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="300" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Margin="0,0,16,0">
-                                                        <TextBlock Text="Hijri date" Style="{StaticResource FieldLabel}" />
-                                                        <TextBlock Style="{StaticResource Hint}" Text="Shift by a day or two if your community follows local moonsighting." />
+                                <c:CardColumns MinColumnWidth="500" MaxSingleColumnWidth="880">
+                                    <!-- Location -->
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Button x:Name="DetectButton" DockPanel.Dock="Right" Click="OnDetectLocation" VerticalAlignment="Center" Margin="12,0,0,0">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource IconPin}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.7" />
+                                                        <TextBlock Text="Detect my location" Margin="8,0,0,0" />
                                                     </StackPanel>
-                                                    <ComboBox x:Name="HijriOffsetBox" Grid.Column="1" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Hijri date adjustment" />
-                                                </Grid>
-                                                <Grid Style="{StaticResource SettingsRow}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="300" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Margin="0,0,16,0">
-                                                        <TextBlock Text="High latitudes" Style="{StaticResource FieldLabel}" />
-                                                        <TextBlock Style="{StaticResource Hint}" Text="Only matters far north or south, where twilight may not end in summer." />
-                                                    </StackPanel>
-                                                    <ComboBox x:Name="HighLatBox" Grid.Column="1" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="High-latitude rule" />
-                                                </Grid>
-                                                <Grid Style="{StaticResource SettingsRow}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="300" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Margin="0,0,16,0">
-                                                        <TextBlock Text="Polar regions" Style="{StaticResource FieldLabel}" />
-                                                        <TextBlock Style="{StaticResource Hint}" Text="Where the sun does not rise or set at all." />
-                                                    </StackPanel>
-                                                    <ComboBox x:Name="PolarBox" Grid.Column="1" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Polar regions" />
-                                                </Grid>
-                                                <WrapPanel x:Name="CustomAnglesPanel" Margin="0,14,0,0">
-                                                    <TextBlock Text="Fajr angle" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
-                                                    <TextBox x:Name="FajrAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Fajr angle" />
-                                                    <TextBlock Text="Isha angle" Style="{StaticResource FieldLabel}" Margin="18,0,10,0" />
-                                                    <TextBox x:Name="IshaAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Isha angle" />
-                                                </WrapPanel>
-                                            </StackPanel>
-                                        </Expander>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Adhan and sounds -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <CheckBox x:Name="AdhanEnabledBox" Click="OnAdhanChanged">
-                                            <StackPanel>
-                                                <TextBlock Text="Adhan and sounds" Style="{StaticResource SectionTitle}" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Plays in the background, even with every window closed." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="160" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <TextBlock Text="Adhan" Style="{StaticResource FieldLabel}" />
-                                            <ComboBox x:Name="SoundBox" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Adhan sound" />
-                                            <Button Grid.Column="2" Click="OnTestSound" Margin="8,0,0,0" ToolTip="Preview" AutomationProperties.Name="Preview Adhan">
-                                                <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
-                                            </Button>
-                                            <TextBlock Grid.Row="1" Text="Fajr Adhan" Style="{StaticResource FieldLabel}" />
-                                            <ComboBox x:Name="FajrSoundBox" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Fajr Adhan sound" />
-                                            <Button Grid.Row="1" Grid.Column="2" Click="OnTestFajrSound" Margin="8,0,0,0" ToolTip="Preview" AutomationProperties.Name="Preview Fajr Adhan">
-                                                <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
-                                            </Button>
-                                            <TextBlock Grid.Row="2" Text="Volume" Style="{StaticResource FieldLabel}" />
-                                            <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,8">
-                                                <TextBlock x:Name="VolumeText" DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-                                                <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="OnVolumeChanged"
-                                                        VerticalAlignment="Center" AutomationProperties.Name="Adhan volume" SmallChange="5" LargeChange="10" />
+                                                </Button>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconPin}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Location" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Every prayer time starts here." />
+                                                </StackPanel>
                                             </DockPanel>
-                                            <Button Grid.Row="2" Grid.Column="2" Content="Stop" Click="OnStopSound" Margin="8,0,0,0" />
-                                        </Grid>
-
-                                        <TextBlock Text="Each prayer" Style="{StaticResource FieldLabel}" Margin="0,18,0,8" />
-                                        <Border Style="{StaticResource Inset}" Padding="16,4">
-                                            <Grid x:Name="PerPrayerGrid">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="170" />
-                                                    <ColumnDefinition Width="150" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                            </Grid>
-                                        </Border>
-                                        <Button Content="Test the Adhan alert" Click="OnTestAlert" HorizontalAlignment="Left" Margin="0,16,0,0"
-                                                ToolTip="Plays the Adhan and shows the alert exactly as it will appear at prayer time." />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Notifications -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Notifications" Style="{StaticResource SectionTitle}" />
-                                        <CheckBox x:Name="NotificationsBox" Click="OnAdhanChanged" Margin="0,10,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="Prayer reminders" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Show a notification when a reminder you set above is due." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                        <CheckBox x:Name="QuietFullScreenBox" Click="OnAdhanChanged" Margin="0,12,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="Quiet during full-screen apps and presentations" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Show the alert without sound while a game, video or slideshow is full screen." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Ramadan -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Ramadan" Style="{StaticResource SectionTitle}" />
-                                        <CheckBox x:Name="VoiceRemindersBox" Click="OnAdhanChanged" Margin="0,10,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="Spoken Sehri and Iftar countdowns" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="15, 10, 5 and 1 minutes before Sehri ends; 10, 5 and 1 minutes before Iftar." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="260" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Margin="0,0,16,0">
-                                                <TextBlock Text="Sehri ends" Style="{StaticResource FieldLabel}" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Imsak: how long before Fajr eating stops." />
-                                            </StackPanel>
-                                            <ComboBox x:Name="ImsakBox" Grid.Column="1" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Sehri ends" />
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Widget -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <CheckBox x:Name="WidgetVisibleBox" Click="OnGeneralChanged">
-                                            <StackPanel>
-                                                <TextBlock Text="Desktop widget" Style="{StaticResource SectionTitle}" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Drag to move, right-click for options. Hiding it never affects the Adhan." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="Layout" Style="{StaticResource FieldLabel}" />
-                                            <Border Grid.Column="1" Style="{StaticResource SegmentHost}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <RadioButton x:Name="WidgetStandard" Style="{StaticResource Segment}" GroupName="WidgetLayout" Content="Standard" Checked="OnGeneralChanged" />
-                                                    <RadioButton x:Name="WidgetCompact" Style="{StaticResource Segment}" GroupName="WidgetLayout" Content="Compact" Checked="OnGeneralChanged" />
+                                            <Border Style="{StaticResource Inset}" Padding="16,12" Margin="0,16,0,0">
+                                                <StackPanel>
+                                                    <TextBlock x:Name="CurrentLocationText" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="CurrentLocationDetail" Style="{StaticResource Hint}" Margin="0,2,0,0" />
                                                 </StackPanel>
                                             </Border>
-                                        </Grid>
-                                        <Grid Style="{StaticResource SettingsRow}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="260" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Margin="0,0,16,0">
-                                                <TextBlock Text="Glass tint" Style="{StaticResource FieldLabel}" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Lighter shows more of your wallpaper; darker is easier to read." />
-                                            </StackPanel>
-                                            <Slider x:Name="WidgetOpacitySlider" Grid.Column="1" Minimum="0.4" Maximum="1" ValueChanged="OnWidgetOpacityChanged" VerticalAlignment="Center"
-                                                    AutomationProperties.Name="Widget glass tint" SmallChange="0.05" LargeChange="0.1" />
-                                        </Grid>
-                                        <CheckBox x:Name="WidgetTopBox" Content="Keep above other windows" Click="OnGeneralChanged" Margin="0,12,0,0" />
-                                        <CheckBox x:Name="WidgetLockBox" Content="Lock position" Click="OnGeneralChanged" Margin="0,6,0,0" />
-                                    </StackPanel>
-                                </Border>
+                                            <TextBlock Text="Or search for a city" Style="{StaticResource Caption}" Margin="0,16,0,6" />
+                                            <DockPanel>
+                                                <Button x:Name="SearchButton" DockPanel.Dock="Right" Content="Search" Style="{StaticResource PrimaryButton}" Click="OnSearch" Margin="8,0,0,0" />
+                                                <TextBox x:Name="SearchBox" KeyDown="OnSearchKeyDown" AutomationProperties.Name="Search for a city" ToolTip="City, town or address, then press Enter" />
+                                            </DockPanel>
+                                            <TextBlock x:Name="LocationMessage" Style="{StaticResource Caption}" Margin="0,8,0,0" />
+                                            <ListBox x:Name="SearchResults" MaxHeight="200" Margin="0,8,0,0" Visibility="Collapsed" DisplayMemberPath="DisplayName"
+                                                     MouseDoubleClick="OnUseSearchResult" Background="#33061026" BorderThickness="0" />
+                                            <Button x:Name="UseResultButton" Content="Use selected place" Style="{StaticResource PrimaryButton}" Click="OnUseSearchResult"
+                                                    HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="Collapsed" />
+                                            <Expander Header="Enter coordinates instead" Margin="0,12,0,0">
+                                                <WrapPanel Margin="0,10,0,0">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,18,8">
+                                                        <TextBlock Text="Latitude" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
+                                                        <TextBox x:Name="LatBox" Width="120" AutomationProperties.Name="Latitude" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,8">
+                                                        <TextBlock Text="Longitude" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
+                                                        <TextBox x:Name="LonBox" Width="120" AutomationProperties.Name="Longitude" />
+                                                    </StackPanel>
+                                                    <Button Content="Apply" Click="OnApplyCoordinates" Margin="0,0,0,8" />
+                                                </WrapPanel>
+                                            </Expander>
+                                            <TextBlock Style="{StaticResource Hint}" Margin="0,12,0,0"
+                                                       Text="Only place names come from OpenStreetMap. Prayer times are calculated on this PC and work offline." />
+                                        </StackPanel>
+                                    </Border>
 
-                                <!-- Startup & general -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Startup and general" Style="{StaticResource SectionTitle}" />
-                                        <CheckBox x:Name="StartupBox" Click="OnGeneralChanged" Margin="0,10,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="Start when I sign in to Windows" />
-                                                <TextBlock Style="{StaticResource Hint}" Text="Runs quietly in the system tray so the Adhan plays on time." />
-                                            </StackPanel>
-                                        </CheckBox>
-                                        <CheckBox x:Name="Clock24Box" Content="Use 24-hour clock" Click="OnGeneralChanged" Margin="0,12,0,0" />
-                                    </StackPanel>
-                                </Border>
+                                    <!-- Prayer times -->
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconToday}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Prayer times" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="How each time is calculated." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Text="Calculation method" Style="{StaticResource FieldLabel}" Margin="0,18,0,0" />
+                                            <TextBlock x:Name="MethodHint" Style="{StaticResource Hint}" Text="Match the method your local masjid uses." />
+                                            <ComboBox x:Name="MethodBox" Margin="0,8,0,0" SelectionChanged="OnCalculationChanged" AutomationProperties.Name="Calculation method" />
+                                            <Grid Style="{StaticResource SettingsRow}" Margin="0,16,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Margin="0,0,16,0">
+                                                    <TextBlock Text="Asr time" Style="{StaticResource FieldLabel}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Standard (Shafi, Maliki, Hanbali) or Hanafi, which is later in the afternoon." />
+                                                </StackPanel>
+                                                <Border Grid.Column="1" Style="{StaticResource SegmentHost}" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <RadioButton x:Name="MadhabStandard" Style="{StaticResource Segment}" GroupName="Madhab" Content="Standard" Checked="OnCalculationChanged" />
+                                                        <RadioButton x:Name="MadhabHanafi" Style="{StaticResource Segment}" GroupName="Madhab" Content="Hanafi" Checked="OnCalculationChanged" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                            <Expander Margin="0,18,0,0">
+                                                <Expander.Header>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Fine-tune" FontWeight="SemiBold" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Match your masjid to the minute, adjust the Hijri date, high-latitude rules" />
+                                                    </StackPanel>
+                                                </Expander.Header>
+                                                <StackPanel Margin="0,8,0,0">
+                                                    <TextBlock Text="Adjust minutes" Style="{StaticResource FieldLabel}" Margin="0,8,0,4" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Add or subtract minutes from each calculated time." />
+                                                    <UniformGrid x:Name="AdjustmentsGrid" Columns="6" Margin="0,8,0,0" HorizontalAlignment="Left" />
+                                                    <Grid Style="{StaticResource SettingsRow}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="Hijri date" Style="{StaticResource FieldLabel}" />
+                                                            <TextBlock Style="{StaticResource Hint}" Text="Shift by a day or two if your community follows local moonsighting." />
+                                                        </StackPanel>
+                                                        <ComboBox x:Name="HijriOffsetBox" Grid.Column="1" Width="236" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Hijri date adjustment" />
+                                                    </Grid>
+                                                    <Grid Style="{StaticResource SettingsRow}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="High latitudes" Style="{StaticResource FieldLabel}" />
+                                                            <TextBlock Style="{StaticResource Hint}" Text="Only matters far north or south, where twilight may not end in summer." />
+                                                        </StackPanel>
+                                                        <ComboBox x:Name="HighLatBox" Grid.Column="1" Width="236" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="High-latitude rule" />
+                                                    </Grid>
+                                                    <Grid Style="{StaticResource SettingsRow}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Margin="0,0,16,0">
+                                                            <TextBlock Text="Polar regions" Style="{StaticResource FieldLabel}" />
+                                                            <TextBlock Style="{StaticResource Hint}" Text="Where the sun does not rise or set at all." />
+                                                        </StackPanel>
+                                                        <ComboBox x:Name="PolarBox" Grid.Column="1" Width="236" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Polar regions" />
+                                                    </Grid>
+                                                    <WrapPanel x:Name="CustomAnglesPanel" Margin="0,14,0,0">
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,18,8">
+                                                            <TextBlock Text="Fajr angle" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
+                                                            <TextBox x:Name="FajrAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Fajr angle" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                            <TextBlock Text="Isha angle" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
+                                                            <TextBox x:Name="IshaAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Isha angle" />
+                                                        </StackPanel>
+                                                    </WrapPanel>
+                                                </StackPanel>
+                                            </Expander>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Adhan and sounds -->
+                                    <Border Style="{StaticResource Card}" c:CardColumns.Column="1">
+                                        <StackPanel>
+                                            <CheckBox x:Name="AdhanEnabledBox" Click="OnAdhanChanged">
+                                                <DockPanel>
+                                                    <Border Style="{StaticResource CardIconTile}">
+                                                        <Path Data="{StaticResource IconSpeaker}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="Adhan and sounds" Style="{StaticResource CardTitle}" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Plays in the background, even with every window closed." />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </CheckBox>
+                                            <Grid Style="{StaticResource SettingsRow}" Margin="0,16,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Text="Adhan" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
+                                                <ComboBox x:Name="SoundBox" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Adhan sound" />
+                                                <Button Grid.Column="2" Click="OnTestSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Preview" AutomationProperties.Name="Preview Adhan">
+                                                    <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
+                                                </Button>
+                                                <TextBlock Grid.Row="1" Text="Fajr Adhan" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
+                                                <ComboBox x:Name="FajrSoundBox" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Fajr Adhan sound" />
+                                                <Button Grid.Row="1" Grid.Column="2" Click="OnTestFajrSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Preview" AutomationProperties.Name="Preview Fajr Adhan">
+                                                    <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
+                                                </Button>
+                                                <TextBlock Grid.Row="2" Text="Volume" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
+                                                <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,8">
+                                                    <TextBlock x:Name="VolumeText" DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="OnVolumeChanged"
+                                                            VerticalAlignment="Center" AutomationProperties.Name="Adhan volume" SmallChange="5" LargeChange="10" />
+                                                </DockPanel>
+                                                <Button Grid.Row="2" Grid.Column="2" Content="Stop" Click="OnStopSound" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <TextBlock Text="Each prayer" Style="{StaticResource FieldLabel}" Margin="0,18,0,0" />
+                                            <TextBlock Style="{StaticResource Hint}" Text="The Adhan and an optional reminder before it." Margin="0,0,0,8" />
+                                            <Border Style="{StaticResource Inset}" Padding="14,4">
+                                                <Grid x:Name="PerPrayerGrid">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                </Grid>
+                                            </Border>
+                                            <Button Content="Test the Adhan alert" Click="OnTestAlert" HorizontalAlignment="Left" Margin="0,16,0,0"
+                                                    ToolTip="Plays the Adhan and shows the alert exactly as it will appear at prayer time." />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Notifications -->
+                                    <Border Style="{StaticResource Card}" c:CardColumns.Column="1">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconBell}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Notifications" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Reminders and quiet hours." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <CheckBox x:Name="NotificationsBox" Click="OnAdhanChanged" Margin="0,16,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="Prayer reminders" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Show a notification when a reminder you set for a prayer is due." />
+                                                </StackPanel>
+                                            </CheckBox>
+                                            <CheckBox x:Name="QuietFullScreenBox" Click="OnAdhanChanged" Margin="0,12,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="Quiet during full-screen apps and presentations" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Show the alert without sound while a game, video or slideshow is full screen." />
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Ramadan -->
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconCrescent}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Ramadan" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Sehri and Iftar for the Imsakia and reminders." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <CheckBox x:Name="VoiceRemindersBox" Click="OnAdhanChanged" Margin="0,16,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="Spoken Sehri and Iftar countdowns" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="15, 10, 5 and 1 minutes before Sehri ends; 10, 5 and 1 minutes before Iftar." />
+                                                </StackPanel>
+                                            </CheckBox>
+                                            <Grid Style="{StaticResource SettingsRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Margin="0,0,16,0">
+                                                    <TextBlock Text="Sehri ends" Style="{StaticResource FieldLabel}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Imsak: how long before Fajr eating stops." />
+                                                </StackPanel>
+                                                <ComboBox x:Name="ImsakBox" Grid.Column="1" Width="220" SelectionChanged="OnCalculationChanged" VerticalAlignment="Center" AutomationProperties.Name="Sehri ends" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Widget -->
+                                    <Border Style="{StaticResource Card}" c:CardColumns.Column="1">
+                                        <StackPanel>
+                                            <CheckBox x:Name="WidgetVisibleBox" Click="OnGeneralChanged">
+                                                <DockPanel>
+                                                    <Border Style="{StaticResource CardIconTile}">
+                                                        <Path Data="{StaticResource IconWidget}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="Desktop widget" Style="{StaticResource CardTitle}" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Drag to move, right-click for options. Hiding it never affects the Adhan." />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </CheckBox>
+                                            <Grid Style="{StaticResource SettingsRow}" Margin="0,16,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Layout" Style="{StaticResource FieldLabel}" />
+                                                <Border Grid.Column="1" Style="{StaticResource SegmentHost}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <RadioButton x:Name="WidgetStandard" Style="{StaticResource Segment}" GroupName="WidgetLayout" Content="Standard" Checked="OnGeneralChanged" />
+                                                        <RadioButton x:Name="WidgetCompact" Style="{StaticResource Segment}" GroupName="WidgetLayout" Content="Compact" Checked="OnGeneralChanged" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                            <Grid Style="{StaticResource SettingsRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Margin="0,0,16,0">
+                                                    <TextBlock Text="Glass tint" Style="{StaticResource FieldLabel}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Lighter shows more of your wallpaper; darker is easier to read." />
+                                                </StackPanel>
+                                                <Slider x:Name="WidgetOpacitySlider" Grid.Column="1" Width="200" Minimum="0.4" Maximum="1" ValueChanged="OnWidgetOpacityChanged" VerticalAlignment="Center"
+                                                        AutomationProperties.Name="Widget glass tint" SmallChange="0.05" LargeChange="0.1" />
+                                            </Grid>
+                                            <CheckBox x:Name="WidgetTopBox" Content="Keep above other windows" Click="OnGeneralChanged" Margin="0,12,0,0" />
+                                            <CheckBox x:Name="WidgetLockBox" Content="Lock position" Click="OnGeneralChanged" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Startup & general -->
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconPower}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Windows startup" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Startup and general preferences." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <CheckBox x:Name="StartupBox" Click="OnGeneralChanged" Margin="0,16,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="Start when I sign in to Windows" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Runs quietly in the system tray so the Adhan plays on time." />
+                                                </StackPanel>
+                                            </CheckBox>
+                                            <CheckBox x:Name="Clock24Box" Content="Use 24-hour clock" Click="OnGeneralChanged" Margin="0,12,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </c:CardColumns>
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- ═════════════ ABOUT ═════════════ -->
+                        <!-- ═════════════ ABOUT ═════════════
+                             A full-width brand header, then Support beside Developer, privacy and licences. -->
                         <ScrollViewer x:Name="AboutPage" Style="{StaticResource PageScroller}" Visibility="Collapsed">
-                            <StackPanel Margin="32,4,32,40" MaxWidth="720" HorizontalAlignment="Left">
-                                <Border Style="{StaticResource HeroCard}" Padding="28">
+                            <StackPanel Margin="32,4,32,40" MaxWidth="1240">
+                                <Border Style="{StaticResource HeroCard}" Padding="28,26">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="96" Height="96" VerticalAlignment="Top"
+                                        <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="104" Height="104" VerticalAlignment="Center"
                                                RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="OptimAdhan logo" />
-                                        <StackPanel Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="OptimAdhan" FontFamily="{StaticResource DisplayFont}" FontSize="32" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
-                                            <TextBlock Text="Your Daily Prayer Companion" FontSize="15" Foreground="{StaticResource ChampagneBrush}" TextWrapping="Wrap" />
+                                        <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center" MaxWidth="860" HorizontalAlignment="Left">
+                                            <TextBlock Text="OptimAdhan" FontFamily="{StaticResource DisplayFont}" FontSize="34" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                                            <TextBlock Text="Your Daily Prayer Companion" FontSize="15.5" Foreground="{StaticResource ChampagneBrush}" TextWrapping="Wrap" />
                                             <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0">
                                                 <Run x:Name="VersionRun" /><Run Text="  ·  Developed by " /><Run Text="Optim Square LLC" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold" />
                                             </TextBlock>
                                             <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0"
                                                        Text="OptimAdhan calculates accurate prayer times on your PC, plays the Adhan on time from the system tray, and keeps the day's schedule on a calm desktop widget, with a Ramadan timetable and monthly calendar. No accounts, no tracking." />
+                                            <WrapPanel Margin="0,14,0,0">
+                                                <Border Style="{StaticResource FeaturePill}"><TextBlock Text="Calculated on your PC" /></Border>
+                                                <Border Style="{StaticResource FeaturePill}"><TextBlock Text="Works offline" /></Border>
+                                                <Border Style="{StaticResource FeaturePill}"><TextBlock Text="No accounts" /></Border>
+                                                <Border Style="{StaticResource FeaturePill}"><TextBlock Text="No tracking" /></Border>
+                                            </WrapPanel>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
 
-                                <!-- Support Our Work: the same two options as the web app's footer dialog, never a popup or reminder. -->
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Path Data="{StaticResource IconHeart}" Style="{StaticResource RowIcon}" Width="17" Height="17" />
-                                            <TextBlock Text="Support Our Work" Style="{StaticResource SectionTitle}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                <c:CardColumns MinColumnWidth="420" MaxSingleColumnWidth="880" Margin="0,16,0,0">
+                                    <!-- Support Our Work: the same two options as the web app's footer dialog, never a popup or reminder. -->
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconHeart}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Support Our Work" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Voluntary, and always appreciated." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0"
+                                                       Text="OptimAdhan is free to use. Your voluntary support helps us maintain accurate prayer times, improve the application, and develop new features." />
+
+                                            <ToggleButton x:Name="ZelleToggle" Style="{StaticResource OptionRow}" Margin="0,16,0,0"
+                                                          AutomationProperties.Name="Zelle: show or hide the QR code">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Style="{StaticResource RowIconTile}">
+                                                        <Path Data="{StaticResource IconQrCode}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="Zelle" FontSize="14.5" FontWeight="SemiBold" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Scan a QR code with your banking app" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Path Grid.Column="2" Data="{StaticResource IconChevronDown}" RenderTransformOrigin="0.5,0.5">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path" BasedOn="{StaticResource RowTrailingIcon}">
+                                                                <Setter Property="RenderTransform">
+                                                                    <Setter.Value><RotateTransform Angle="0" /></Setter.Value>
+                                                                </Setter>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsChecked, ElementName=ZelleToggle}" Value="True">
+                                                                        <Setter Property="RenderTransform">
+                                                                            <Setter.Value><RotateTransform Angle="180" /></Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                </Grid>
+                                            </ToggleButton>
+
+                                            <Border Style="{StaticResource Inset}" Margin="0,8,0,0" Padding="20"
+                                                    Visibility="{Binding IsChecked, ElementName=ZelleToggle, Converter={StaticResource BoolToVisibility}}">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <!-- The white surround is the QR quiet zone; the image keeps its own aspect ratio. -->
+                                                    <Border Background="White" CornerRadius="14" Padding="20" HorizontalAlignment="Center">
+                                                        <Image Source="pack://application:,,,/Assets/Support/zelle-qr.png" Width="232" Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True"
+                                                               AutomationProperties.Name="Zelle donation QR code" />
+                                                    </Border>
+                                                    <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0" MaxWidth="300" TextAlignment="Center"
+                                                               Text="Scan this QR code with your banking app to contribute through Zelle." />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Button Style="{StaticResource OptionRow}" Margin="0,10,0,0" Click="OnOpenPayPal"
+                                                    ToolTip="https://paypal.me/RRAZU" AutomationProperties.Name="PayPal: open the donation page in your browser">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Style="{StaticResource RowIconTile}">
+                                                        <Path Data="{StaticResource IconWallet}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="PayPal" FontSize="14.5" FontWeight="SemiBold" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Opens paypal.me/RRAZU in your browser" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
+                                                </Grid>
+                                            </Button>
+
+                                            <TextBlock Style="{StaticResource Hint}" Margin="0,18,0,0" FontStyle="Italic" TextAlignment="Center"
+                                                       Text="“The best of people are those who benefit others.” — Prophet Muhammad ﷺ" />
                                         </StackPanel>
-                                        <TextBlock Style="{StaticResource Caption}" Margin="0,8,0,0"
-                                                   Text="OptimAdhan is free to use. Your voluntary support helps us maintain accurate prayer times, improve the application, and develop new features." />
+                                    </Border>
 
-                                        <ToggleButton x:Name="ZelleToggle" Style="{StaticResource OptionRow}" Margin="0,16,0,0"
-                                                      AutomationProperties.Name="Zelle: show or hide the QR code">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Style="{StaticResource RowIconTile}">
-                                                    <Path Data="{StaticResource IconQrCode}" Style="{StaticResource RowIcon}" />
+                                    <!-- Developer and support -->
+                                    <Border Style="{StaticResource Card}" c:CardColumns.Column="1">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconGlobe}" Style="{StaticResource RowIcon}" />
                                                 </Border>
-                                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="Zelle" FontSize="14.5" FontWeight="SemiBold" />
-                                                    <TextBlock Style="{StaticResource Hint}" Text="Scan a QR code with your banking app" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Developer &amp; Support" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Made by Optim Square LLC." />
                                                 </StackPanel>
-                                                <Path Grid.Column="2" Data="{StaticResource IconChevronDown}" RenderTransformOrigin="0.5,0.5">
-                                                    <Path.Style>
-                                                        <Style TargetType="Path" BasedOn="{StaticResource RowTrailingIcon}">
-                                                            <Setter Property="RenderTransform">
-                                                                <Setter.Value><RotateTransform Angle="0" /></Setter.Value>
-                                                            </Setter>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsChecked, ElementName=ZelleToggle}" Value="True">
-                                                                    <Setter Property="RenderTransform">
-                                                                        <Setter.Value><RotateTransform Angle="180" /></Setter.Value>
-                                                                    </Setter>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Path.Style>
-                                                </Path>
-                                            </Grid>
-                                        </ToggleButton>
-
-                                        <Border Style="{StaticResource Inset}" Margin="0,8,0,0" Padding="20"
-                                                Visibility="{Binding IsChecked, ElementName=ZelleToggle, Converter={StaticResource BoolToVisibility}}">
-                                            <StackPanel HorizontalAlignment="Center">
-                                                <!-- The white surround is the QR quiet zone; the image keeps its own aspect ratio. -->
-                                                <Border Background="White" CornerRadius="14" Padding="20" HorizontalAlignment="Center">
-                                                    <Image Source="pack://application:,,,/Assets/Support/zelle-qr.png" Width="232" Stretch="Uniform"
-                                                           RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True"
-                                                           AutomationProperties.Name="Zelle donation QR code" />
-                                                </Border>
-                                                <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0" MaxWidth="300" TextAlignment="Center"
-                                                           Text="Scan this QR code with your banking app to contribute through Zelle." />
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Button Style="{StaticResource OptionRow}" Margin="0,10,0,0" Click="OnOpenPayPal"
-                                                ToolTip="https://paypal.me/RRAZU" AutomationProperties.Name="PayPal: open the donation page in your browser">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Style="{StaticResource RowIconTile}">
-                                                    <Path Data="{StaticResource IconWallet}" Style="{StaticResource RowIcon}" />
-                                                </Border>
-                                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="PayPal" FontSize="14.5" FontWeight="SemiBold" />
-                                                    <TextBlock Style="{StaticResource Hint}" Text="Opens paypal.me/RRAZU in your browser" TextTrimming="CharacterEllipsis" />
-                                                </StackPanel>
-                                                <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
-                                            </Grid>
-                                        </Button>
-
-                                        <TextBlock Style="{StaticResource Hint}" Margin="0,16,0,0" FontStyle="Italic" TextAlignment="Center"
-                                                   Text="“The best of people are those who benefit others.” — Prophet Muhammad ﷺ" />
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Developer &amp; Help" Style="{StaticResource SectionTitle}" />
-                                        <UniformGrid Columns="2" Margin="-5,10,-5,0">
-                                            <Button Style="{StaticResource OptionRow}" Margin="5,0" Click="OnOpenWebsite" ToolTip="https://optimsquare.io">
+                                            </DockPanel>
+                                            <Button Style="{StaticResource OptionRow}" Margin="0,16,0,0" Click="OnOpenWebsite" ToolTip="https://optimsquare.io">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
@@ -1093,7 +1187,7 @@
                                                     <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
                                                 </Grid>
                                             </Button>
-                                            <Button Style="{StaticResource OptionRow}" Margin="5,0" Click="OnReportIssue" ToolTip="Opens a new issue on GitHub">
+                                            <Button Style="{StaticResource OptionRow}" Margin="0,10,0,0" Click="OnReportIssue" ToolTip="Opens a new issue on GitHub">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
@@ -1105,28 +1199,65 @@
                                                     </Border>
                                                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
                                                         <TextBlock Text="Report an issue" FontSize="14.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock Style="{StaticResource Hint}" Text="Feedback on GitHub" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Feedback and bug reports on GitHub" TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
                                                     <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
                                                 </Grid>
                                             </Button>
-                                        </UniformGrid>
-                                        <WrapPanel Margin="0,14,0,0">
-                                            <Button Content="Open settings folder" Click="OnOpenSettingsFolder" Margin="0,0,8,0" />
-                                            <Button Content="Open log folder" Click="OnOpenLogFolder" />
-                                        </WrapPanel>
-                                    </StackPanel>
-                                </Border>
+                                            <TextBlock Text="Troubleshooting" Style="{StaticResource FieldLabel}" Margin="0,18,0,0" />
+                                            <TextBlock Style="{StaticResource Hint}" Text="Attach the log to an issue report if something isn't working." />
+                                            <WrapPanel Margin="0,10,0,0">
+                                                <Button Click="OnOpenSettingsFolder" Margin="0,0,8,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource IconFolder}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.6" StrokeLineJoin="Round" />
+                                                        <TextBlock Text="Open settings folder" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="OnOpenLogFolder" Margin="0,0,0,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource IconFolder}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.6" StrokeLineJoin="Round" />
+                                                        <TextBlock Text="Open log folder" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
 
-                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="© Optim Square LLC. All rights reserved." FontWeight="SemiBold" />
-                                        <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,0"
-                                                   Text="Prayer times are calculated on your PC with the open-source adhan algorithms (MIT licence, Batoul Apps), verified against the AlAdhan service. Place search by OpenStreetMap Nominatim (© OpenStreetMap contributors). Time zones from GeoTimeZone. Arabic text in the Amiri font (SIL OFL)." />
-                                        <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,0"
-                                                   Text="Privacy: no accounts and no tracking. Your location stays on this PC; only place-name searches are sent to OpenStreetMap. Donation links open in your own browser; OptimAdhan never handles payments." />
-                                    </StackPanel>
-                                </Border>
+                                    <!-- Privacy, licences and acknowledgments -->
+                                    <Border Style="{StaticResource Card}" c:CardColumns.Column="1">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border Style="{StaticResource CardIconTile}">
+                                                    <Path Data="{StaticResource IconShield}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Privacy" Style="{StaticResource CardTitle}" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="No accounts and no tracking." />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0"
+                                                       Text="Your location stays on this PC; only place-name searches are sent to OpenStreetMap. Donation links open in your own browser; OptimAdhan never handles payments." />
+                                            <Expander Margin="0,16,0,0">
+                                                <Expander.Header>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource IconDocument}" Width="15" Height="15" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.6"
+                                                              StrokeLineJoin="Round" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Licences and acknowledgments" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Expander.Header>
+                                                <StackPanel Margin="0,10,0,0">
+                                                    <TextBlock Style="{StaticResource Caption}"
+                                                               Text="Prayer times are calculated on your PC with the open-source adhan algorithms (MIT licence, Batoul Apps), verified against the AlAdhan service." />
+                                                    <TextBlock Style="{StaticResource Caption}" Margin="0,8,0,0"
+                                                               Text="Place search by OpenStreetMap Nominatim (© OpenStreetMap contributors). Time zones from GeoTimeZone. Arabic text in the Amiri font (SIL OFL)." />
+                                                </StackPanel>
+                                            </Expander>
+                                        </StackPanel>
+                                    </Border>
+                                </c:CardColumns>
+
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,22,0,0" HorizontalAlignment="Center"
+                                           Text="© Optim Square LLC. All rights reserved." />
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
