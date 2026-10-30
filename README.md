@@ -8,7 +8,7 @@ background, a desktop widget, a monthly timetable and a Ramadan Imsakia.
 > `PrayerAndRamadan/` is the original web app, kept **read-only** as a reference.
 > Nothing in this solution modifies it.
 
-## What's in v0.2
+## What's in v0.3
 
 | Area | Status |
 |---|---|
@@ -20,8 +20,10 @@ background, a desktop widget, a monthly timetable and a Ramadan Imsakia.
 | Ramadan: Sehri/Iftar times, Hijri offset, adjustable Imsak, spoken countdown reminders | ✅ |
 | Per-user MSI installer (no admin), clean uninstall | ✅ |
 | **Premium Midnight design:** sidebar app, hero countdown, frosted-glass widget and alerts, dark tray menu, brand assets | ✅ v0.2 |
+| Adaptive sidebar, F11 full-screen dashboard, rolling timetable, Now Playing Adhan card | ✅ v0.3 |
+| About page with voluntary **Support Our Work** (Zelle QR, PayPal link) and Report an issue | ✅ v0.3 |
 
-Screenshots: [docs/screenshots](docs/screenshots).
+Screenshots: [docs/screenshots](docs/screenshots). Release notes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Build, test, run
 
@@ -29,7 +31,7 @@ Requires the **.NET 10 SDK**. The installer also needs WiX v5
 (`dotnet tool install -g wix --version 5.0.2` and `wix extension add -g WixToolset.Util.wixext/5.0.2`).
 
 ```powershell
-dotnet test                                    # 46 offline tests, including 51,880 adhan-js parity cases
+dotnet test                                    # 56 offline tests, including 51,880 adhan-js parity cases
 $env:OPTIMADHAN_NETWORK_TESTS = "1"; dotnet test   # + cross-checks against the AlAdhan API (needs internet)
 
 $env:OPTIMADHAN_DEV = "1"                      # developer mode: separate settings, never touches the Run key

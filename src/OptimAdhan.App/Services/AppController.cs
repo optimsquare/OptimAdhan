@@ -259,6 +259,10 @@ public static class AppInfo
     public const string ProductName = "OptimAdhan";
     public const string Company = "Optim Square LLC";
     public const string Tagline = "Your Daily Prayer Companion";
+    public const string WebsiteUrl = "https://optimsquare.io";
+    public const string IssuesUrl = "https://github.com/optimsquare/OptimAdhan/issues/new";
+    // Same donation link as the PrayerAndRamadan web app's "Support Our Work" dialog (components/footer.tsx).
+    public const string PayPalUrl = "https://paypal.me/RRAZU";
 
     public static string Version { get; } =
         typeof(AppInfo).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0.0.0";

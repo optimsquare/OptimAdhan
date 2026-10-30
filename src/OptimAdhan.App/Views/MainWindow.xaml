@@ -969,28 +969,162 @@
 
                         <!-- ═════════════ ABOUT ═════════════ -->
                         <ScrollViewer x:Name="AboutPage" Style="{StaticResource PageScroller}" Visibility="Collapsed">
-                            <StackPanel Margin="32,4,32,40" MaxWidth="680" HorizontalAlignment="Left">
+                            <StackPanel Margin="32,4,32,40" MaxWidth="720" HorizontalAlignment="Left">
                                 <Border Style="{StaticResource HeroCard}" Padding="28">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="96" Height="96" RenderOptions.BitmapScalingMode="HighQuality" />
-                                        <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="96" Height="96" VerticalAlignment="Top"
+                                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="OptimAdhan logo" />
+                                        <StackPanel Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
                                             <TextBlock Text="OptimAdhan" FontFamily="{StaticResource DisplayFont}" FontSize="32" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
-                                            <TextBlock Text="Your Daily Prayer Companion" FontSize="15" Foreground="{StaticResource ChampagneBrush}" />
-                                            <TextBlock x:Name="VersionText" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+                                            <TextBlock Text="Your Daily Prayer Companion" FontSize="15" Foreground="{StaticResource ChampagneBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0">
+                                                <Run x:Name="VersionRun" /><Run Text="  ·  Developed by " /><Run Text="Optim Square LLC" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold" />
+                                            </TextBlock>
+                                            <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0"
+                                                       Text="OptimAdhan calculates accurate prayer times on your PC, plays the Adhan on time from the system tray, and keeps the day's schedule on a calm desktop widget, with a Ramadan timetable and monthly calendar. No accounts, no tracking." />
                                         </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Support Our Work: the same two options as the web app's footer dialog, never a popup or reminder. -->
+                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="{StaticResource IconHeart}" Style="{StaticResource RowIcon}" Width="17" Height="17" />
+                                            <TextBlock Text="Support Our Work" Style="{StaticResource SectionTitle}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource Caption}" Margin="0,8,0,0"
+                                                   Text="OptimAdhan is free to use. Your voluntary support helps us maintain accurate prayer times, improve the application, and develop new features." />
+
+                                        <ToggleButton x:Name="ZelleToggle" Style="{StaticResource OptionRow}" Margin="0,16,0,0"
+                                                      AutomationProperties.Name="Zelle: show or hide the QR code">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Style="{StaticResource RowIconTile}">
+                                                    <Path Data="{StaticResource IconQrCode}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="Zelle" FontSize="14.5" FontWeight="SemiBold" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Scan a QR code with your banking app" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <Path Grid.Column="2" Data="{StaticResource IconChevronDown}" RenderTransformOrigin="0.5,0.5">
+                                                    <Path.Style>
+                                                        <Style TargetType="Path" BasedOn="{StaticResource RowTrailingIcon}">
+                                                            <Setter Property="RenderTransform">
+                                                                <Setter.Value><RotateTransform Angle="0" /></Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsChecked, ElementName=ZelleToggle}" Value="True">
+                                                                    <Setter Property="RenderTransform">
+                                                                        <Setter.Value><RotateTransform Angle="180" /></Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Path.Style>
+                                                </Path>
+                                            </Grid>
+                                        </ToggleButton>
+
+                                        <Border Style="{StaticResource Inset}" Margin="0,8,0,0" Padding="20"
+                                                Visibility="{Binding IsChecked, ElementName=ZelleToggle, Converter={StaticResource BoolToVisibility}}">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <!-- The white surround is the QR quiet zone; the image keeps its own aspect ratio. -->
+                                                <Border Background="White" CornerRadius="14" Padding="20" HorizontalAlignment="Center">
+                                                    <Image Source="pack://application:,,,/Assets/Support/zelle-qr.png" Width="232" Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True"
+                                                           AutomationProperties.Name="Zelle donation QR code" />
+                                                </Border>
+                                                <TextBlock Style="{StaticResource Caption}" Margin="0,14,0,0" MaxWidth="300" TextAlignment="Center"
+                                                           Text="Scan this QR code with your banking app to contribute through Zelle." />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Button Style="{StaticResource OptionRow}" Margin="0,10,0,0" Click="OnOpenPayPal"
+                                                ToolTip="https://paypal.me/RRAZU" AutomationProperties.Name="PayPal: open the donation page in your browser">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Style="{StaticResource RowIconTile}">
+                                                    <Path Data="{StaticResource IconWallet}" Style="{StaticResource RowIcon}" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="PayPal" FontSize="14.5" FontWeight="SemiBold" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Opens paypal.me/RRAZU in your browser" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
+                                            </Grid>
+                                        </Button>
+
+                                        <TextBlock Style="{StaticResource Hint}" Margin="0,16,0,0" FontStyle="Italic" TextAlignment="Center"
+                                                   Text="“The best of people are those who benefit others.” — Prophet Muhammad ﷺ" />
                                     </StackPanel>
                                 </Border>
+
+                                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Developer &amp; Help" Style="{StaticResource SectionTitle}" />
+                                        <UniformGrid Columns="2" Margin="-5,10,-5,0">
+                                            <Button Style="{StaticResource OptionRow}" Margin="5,0" Click="OnOpenWebsite" ToolTip="https://optimsquare.io">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Style="{StaticResource RowIconTile}">
+                                                        <Path Data="{StaticResource IconGlobe}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="Optim Square LLC" FontSize="14.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="optimsquare.io" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
+                                                </Grid>
+                                            </Button>
+                                            <Button Style="{StaticResource OptionRow}" Margin="5,0" Click="OnReportIssue" ToolTip="Opens a new issue on GitHub">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Style="{StaticResource RowIconTile}">
+                                                        <Path Data="{StaticResource IconFeedback}" Style="{StaticResource RowIcon}" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="Report an issue" FontSize="14.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Style="{StaticResource Hint}" Text="Feedback on GitHub" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Path Grid.Column="2" Data="{StaticResource IconExternal}" Style="{StaticResource RowTrailingIcon}" />
+                                                </Grid>
+                                            </Button>
+                                        </UniformGrid>
+                                        <WrapPanel Margin="0,14,0,0">
+                                            <Button Content="Open settings folder" Click="OnOpenSettingsFolder" Margin="0,0,8,0" />
+                                            <Button Content="Open log folder" Click="OnOpenLogFolder" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
                                 <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                                     <StackPanel>
                                         <TextBlock Text="© Optim Square LLC. All rights reserved." FontWeight="SemiBold" />
                                         <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,0"
                                                    Text="Prayer times are calculated on your PC with the open-source adhan algorithms (MIT licence, Batoul Apps), verified against the AlAdhan service. Place search by OpenStreetMap Nominatim (© OpenStreetMap contributors). Time zones from GeoTimeZone. Arabic text in the Amiri font (SIL OFL)." />
                                         <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,0"
-                                                   Text="Privacy: no accounts and no tracking. Your location stays on this PC; only place-name searches are sent to OpenStreetMap." />
-                                        <WrapPanel Margin="0,16,0,0">
-                                            <Button Content="Open settings folder" Click="OnOpenSettingsFolder" Margin="0,0,8,0" />
-                                            <Button Content="Open log folder" Click="OnOpenLogFolder" />
-                                        </WrapPanel>
+                                                   Text="Privacy: no accounts and no tracking. Your location stays on this PC; only place-name searches are sent to OpenStreetMap. Donation links open in your own browser; OptimAdhan never handles payments." />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

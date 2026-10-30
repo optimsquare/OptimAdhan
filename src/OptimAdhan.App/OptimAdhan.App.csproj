@@ -18,7 +18,7 @@
     <Company>Optim Square LLC</Company>
     <Copyright>© Optim Square LLC</Copyright>
     <Description>OptimAdhan — Your Daily Prayer Companion</Description>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <!-- Fluent theme in WPF is flagged experimental (WPF0001) but supported in .NET 10. -->
     <!-- WFO0003: DPI awareness is declared in app.manifest because WPF, not WinForms, owns the windows. -->
     <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
@@ -40,6 +40,8 @@
     <!-- Official brand artwork copied from assets/: app icon, dimensional symbol, tray crescents. -->
     <Resource Include="Assets\Brand\*.ico" />
     <Resource Include="Assets\Brand\symbol.png" />
+    <!-- Zelle QR code: an unmodified copy of the web app's public/ZelleCode.png. Never regenerate it. -->
+    <Resource Include="Assets\Support\zelle-qr.png" />
     <Resource Include="Assets\Fonts\Amiri-Regular.ttf" />
     <!-- Amiri 1.003 (SIL OFL 1.1): the licence must travel with the font. -->
     <Content Include="Assets\Fonts\OFL.txt" CopyToOutputDirectory="PreserveNewest" />

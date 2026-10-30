@@ -147,7 +147,7 @@ public partial class MainWindow : Window
             _app.SettingsChanged -= OnSettingsChanged;
             _app.AudioStateChanged -= OnAudioStateChanged;
         };
-        VersionText.Text = $"Version {AppInfo.Version}";
+        VersionRun.Text = $"Version {AppInfo.Version}";
     }
 
     public void Navigate(Page page)
@@ -1442,6 +1442,25 @@ public partial class MainWindow : Window
         OpenFolder(Path.GetDirectoryName(DevMode.IsEnabled ? DevMode.SettingsPath : SettingsStore.DefaultPath)!);
 
     private void OnOpenLogFolder(object sender, RoutedEventArgs e) => OpenFolder(Log.Folder);
+
+    private void OnOpenPayPal(object sender, RoutedEventArgs e) => OpenInBrowser(AppInfo.PayPalUrl);
+
+    private void OnOpenWebsite(object sender, RoutedEventArgs e) => OpenInBrowser(AppInfo.WebsiteUrl);
+
+    private void OnReportIssue(object sender, RoutedEventArgs e) => OpenInBrowser(AppInfo.IssuesUrl);
+
+    // Links go to the user's default browser; OptimAdhan never shows payment or account forms itself.
+    private static void OpenInBrowser(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Could not open {url}", ex);
+        }
+    }
 
     private static void OpenFolder(string folder)
     {
