@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+                    xmlns:c="clr-namespace:OptimAdhan.App.Controls">
     <!--
       OptimAdhan — Premium Midnight design system.
       Palette from assets/references/brand-moodboard.png, extended with emerald and champagne.
@@ -425,7 +426,8 @@
         </Setter>
     </Style>
 
-    <!-- ── Sidebar navigation item. Tag holds the icon geometry. ── -->
+    <!-- ── Sidebar navigation item. Tag holds the icon geometry; on the icon rail
+         (c:Shell.IsCompact) the label hides and becomes a tooltip. ── -->
     <Style x:Key="NavItem" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
         <Setter Property="FontSize" Value="14" />
@@ -434,18 +436,23 @@
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="GroupName" Value="MainNav" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource GoldFocusVisual}" />
+        <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}" />
+        <Setter Property="ToolTipService.IsEnabled" Value="False" />
+        <Setter Property="ToolTipService.Placement" Value="Right" />
+        <Setter Property="ToolTipService.InitialShowDelay" Value="250" />
+        <Setter Property="AutomationProperties.Name" Value="{Binding Content, RelativeSource={RelativeSource Self}}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Grid>
+                    <Grid Background="Transparent">
                         <Border x:Name="Bd" CornerRadius="10" Background="Transparent" />
                         <Border x:Name="Indicator" Width="3" Height="18" CornerRadius="1.5" HorizontalAlignment="Left"
                                 Background="{StaticResource GoldBrush}" Opacity="0" />
-                        <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
+                        <StackPanel x:Name="Row" Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
                             <Path x:Name="Icon" Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Width="18" Height="18"
                                   Stretch="Uniform" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.6"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
-                            <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center" />
+                            <ContentPresenter x:Name="Label" Margin="12,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -458,6 +465,84 @@
                             <Setter TargetName="Indicator" Property="Opacity" Value="1" />
                             <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="c:Shell.IsCompact" Value="True">
+                            <Setter TargetName="Label" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Row" Property="Margin" Value="0" />
+                            <Setter TargetName="Row" Property="HorizontalAlignment" Value="Center" />
+                            <Setter TargetName="Icon" Property="Width" Value="20" />
+                            <Setter TargetName="Icon" Property="Height" Value="20" />
+                            <Setter Property="ToolTipService.IsEnabled" Value="True" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── Chrome icon button (sidebar toggle, title-bar tools). Content is a Path. ── -->
+    <Style x:Key="ChromeIconButton" TargetType="Button">
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource GoldFocusVisual}" />
+        <Setter Property="ToolTipService.InitialShowDelay" Value="400" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="9" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource NavHoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource IvoryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldFaintBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── Quick toggle on the icon rail: Tag holds the icon; a slash marks "off". ── -->
+    <Style x:Key="RailToggle" TargetType="CheckBox">
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource GoldFocusVisual}" />
+        <Setter Property="ToolTipService.Placement" Value="Right" />
+        <Setter Property="ToolTipService.InitialShowDelay" Value="250" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Bd" CornerRadius="10" Background="Transparent" BorderThickness="1" BorderBrush="Transparent">
+                        <Grid Width="18" Height="18">
+                            <Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stretch="Uniform"
+                                  Stroke="{TemplateBinding Foreground}" StrokeThickness="1.7"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                            <Line x:Name="Slash" X1="1" Y1="1" X2="17" Y2="17" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.7"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Slash" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource EmeraldFaintBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource EmeraldSoftBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GlassStrokeBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -562,12 +647,18 @@
         <Setter Property="MaxWidth" Value="320" />
     </Style>
 
-    <!-- Icon geometries (24×24 stroke icons) -->
-    <PathGeometry x:Key="IconToday" Figures="M12,8 A4,4 0 1 0 12.01,8 M12,2 V4 M12,20 V22 M2,12 H4 M20,12 H22 M4.9,4.9 L6.3,6.3 M17.7,17.7 L19.1,19.1 M4.9,19.1 L6.3,17.7 M17.7,6.3 L19.1,4.9" />
+    <!-- Icon geometries (24×24 stroke icons). One icon per feature, used everywhere that feature appears:
+         the sun belongs to Dhuhr only, so Today is a clock and Settings a gear. -->
+    <PathGeometry x:Key="IconToday" Figures="M12,3 A9,9 0 1 0 12.01,3 M12,7.5 V12 L15,14" />
     <PathGeometry x:Key="IconCalendar" Figures="M6,5 H18 A3,3 0 0 1 21,8 V18 A3,3 0 0 1 18,21 H6 A3,3 0 0 1 3,18 V8 A3,3 0 0 1 6,5 Z M3,10 H21 M8,3 V7 M16,3 V7" />
     <PathGeometry x:Key="IconCrescent" Figures="M20,14.5 A8.5,8.5 0 1 1 9.5,4 A7,7 0 0 0 20,14.5 Z" />
-    <PathGeometry x:Key="IconSettings" Figures="M12,9 A3,3 0 1 0 12.01,9 M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M4.9,4.9 L7,7 M17,17 L19.1,19.1 M4.9,19.1 L7,17 M17,7 L19.1,4.9" />
+    <PathGeometry x:Key="IconSettings" Figures="M9.94,4.58 L10.05,1.99 A10.2,10.2 0 0 1 13.95,1.99 L14.06,4.58 A7.7,7.7 0 0 1 15.79,5.30 L17.70,3.54 A10.2,10.2 0 0 1 20.46,6.30 L18.70,8.21 A7.7,7.7 0 0 1 19.42,9.94 L22.01,10.05 A10.2,10.2 0 0 1 22.01,13.95 L19.42,14.06 A7.7,7.7 0 0 1 18.70,15.79 L20.46,17.70 A10.2,10.2 0 0 1 17.70,20.46 L15.79,18.70 A7.7,7.7 0 0 1 14.06,19.42 L13.95,22.01 A10.2,10.2 0 0 1 10.05,22.01 L9.94,19.42 A7.7,7.7 0 0 1 8.21,18.70 L6.30,20.46 A10.2,10.2 0 0 1 3.54,17.70 L5.30,15.79 A7.7,7.7 0 0 1 4.58,14.06 L1.99,13.95 A10.2,10.2 0 0 1 1.99,10.05 L4.58,9.94 A7.7,7.7 0 0 1 5.30,8.21 L3.54,6.30 A10.2,10.2 0 0 1 6.30,3.54 L8.21,5.30 A7.7,7.7 0 0 1 9.94,4.58 Z M12,8.6 A3.4,3.4 0 1 0 12.01,8.6 Z" />
     <PathGeometry x:Key="IconInfo" Figures="M12,3 A9,9 0 1 0 12.01,3 M12,11 V17 M12,7.5 V7.6" />
     <PathGeometry x:Key="IconPin" Figures="M12,21 C12,21 5,14.8 5,9.5 A7,7 0 0 1 19,9.5 C19,14.8 12,21 12,21 Z M12,7 A2.5,2.5 0 1 0 12.01,7" />
     <PathGeometry x:Key="IconSpeaker" Figures="M11,5 L6,9 H2 V15 H6 L11,19 Z M15.5,8.5 A5,5 0 0 1 15.5,15.5" />
+    <PathGeometry x:Key="IconWidget" Figures="M6,4 H18 A2,2 0 0 1 20,6 V18 A2,2 0 0 1 18,20 H6 A2,2 0 0 1 4,18 V6 A2,2 0 0 1 6,4 Z M8,9 H16 M8,13 H13 M8,16 H11" />
+    <PathGeometry x:Key="IconSidebar" Figures="M5,4 H19 A2,2 0 0 1 21,6 V18 A2,2 0 0 1 19,20 H5 A2,2 0 0 1 3,18 V6 A2,2 0 0 1 5,4 Z M9.5,4 V20" />
+    <PathGeometry x:Key="IconLayout" Figures="M5,4 H19 A2,2 0 0 1 21,6 V18 A2,2 0 0 1 19,20 H5 A2,2 0 0 1 3,18 V6 A2,2 0 0 1 5,4 Z M3,9.5 H21 M9.5,9.5 V20" />
+    <PathGeometry x:Key="IconFullScreen" Figures="M4,9 V4 H9 M15,4 H20 V9 M20,15 V20 H15 M9,20 H4 V15" />
+    <PathGeometry x:Key="IconExitFullScreen" Figures="M9,4 V9 H4 M20,9 H15 V4 M15,20 V15 H20 M4,15 H9 V20" />
 </ResourceDictionary>

@@ -69,6 +69,12 @@ public static class FullScreenDetector
     {
         try
         {
+            // OptimAdhan's own full-screen dashboard is not a reason to stay quiet.
+            if (GetWindowThreadProcessId(GetForegroundWindow(), out var pid) != 0 && pid == Environment.ProcessId)
+            {
+                return false;
+            }
+
             return SHQueryUserNotificationState(out var state) == 0
                 && state is UserNotificationState.Busy
                     or UserNotificationState.RunningDirect3DFullScreen
@@ -83,6 +89,12 @@ public static class FullScreenDetector
 
     [DllImport("shell32.dll")]
     private static extern int SHQueryUserNotificationState(out UserNotificationState state);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out int processId);
 }
 
 /// <summary>Only one OptimAdhan per user session; a second launch asks the first to show itself.</summary>

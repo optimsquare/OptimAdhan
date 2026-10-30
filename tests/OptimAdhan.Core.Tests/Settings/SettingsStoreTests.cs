@@ -47,6 +47,31 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void MainWindowPreferencesRoundTrip()
+    {
+        var store = new SettingsStore(SettingsPath);
+        var window = new MainWindowSettings { Navigation = NavigationMode.Hidden, Left = 40, Top = 30, Width = 1300, Height = 860, Maximized = true };
+
+        store.Save(new AppSettings { MainWindow = window });
+
+        Assert.Equal(window, store.Load().MainWindow);
+        Assert.Contains("\"Hidden\"", File.ReadAllText(SettingsPath));
+    }
+
+    [Fact]
+    public void OlderFilesWithoutMainWindowGetDefaults()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SettingsPath, "{ \"Version\": 1, \"Use24HourClock\": true }");
+
+        var settings = new SettingsStore(SettingsPath).Load();
+
+        Assert.True(settings.Use24HourClock);
+        Assert.Equal(NavigationMode.Expanded, settings.MainWindow.Navigation);
+        Assert.Null(settings.MainWindow.Width);
+    }
+
+    [Fact]
     public void CorruptFileIsPreservedAndDefaultsUsed()
     {
         Directory.CreateDirectory(_dir);

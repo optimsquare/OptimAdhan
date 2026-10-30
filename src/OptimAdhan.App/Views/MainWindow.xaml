@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:c="clr-namespace:OptimAdhan.App.Controls"
-        Title="OptimAdhan" Width="1180" Height="800" MinWidth="820" MinHeight="580"
+        Title="OptimAdhan" Width="1180" Height="800" MinWidth="760" MinHeight="560"
         Icon="pack://application:,,,/Assets/Brand/optimadhan.ico"
         WindowStartupLocation="CenterScreen" Background="Transparent"
         Foreground="{StaticResource IvoryBrush}" FontFamily="{StaticResource TextFont}" FontSize="14"
@@ -99,6 +99,53 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- Today: one day of the dashboard timetable. Columns match DayTableHeader.
+             Rolling: Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha. Ramadan: Sehri ends, Fajr, Dhuhr, Asr, Iftar, Isha. -->
+        <DataTemplate x:Key="DayRowTemplate">
+            <Border x:Name="Row" Height="32" CornerRadius="9" Padding="14,0" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Dow}" Width="40" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Border x:Name="Tag" CornerRadius="9" Padding="8,1" Margin="10,0,0,0" Background="{StaticResource EmeraldFaintBrush}" VerticalAlignment="Center"
+                                Visibility="{Binding HasTag, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock x:Name="TagText" Text="{Binding Tag}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource EmeraldSoftBrush}" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock x:Name="T0" Grid.Column="1" Text="{Binding Times[0]}" Style="{StaticResource TimeCell}" />
+                    <TextBlock x:Name="T1" Grid.Column="2" Text="{Binding Times[1]}" Style="{StaticResource TimeCell}" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="3" Text="{Binding Times[2]}" Style="{StaticResource TimeCell}" />
+                    <TextBlock Grid.Column="4" Text="{Binding Times[3]}" Style="{StaticResource TimeCell}" />
+                    <TextBlock x:Name="T4" Grid.Column="5" Text="{Binding Times[4]}" Style="{StaticResource TimeCell}" />
+                    <TextBlock Grid.Column="6" Text="{Binding Times[5]}" Style="{StaticResource TimeCell}" />
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsRamadan}" Value="True">
+                    <Setter TargetName="T0" Property="Foreground" Value="#DCE6FF" />
+                    <Setter TargetName="T0" Property="FontWeight" Value="SemiBold" />
+                    <Setter TargetName="T1" Property="Foreground" Value="{StaticResource IvoryBrush}" />
+                    <Setter TargetName="T4" Property="Foreground" Value="{StaticResource GoldBrush}" />
+                    <Setter TargetName="T4" Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsToday}" Value="True">
+                    <Setter TargetName="Row" Property="Background" Value="{StaticResource GoldSoftBrush}" />
+                    <Setter TargetName="Row" Property="BorderBrush" Value="#8CFFD65A" />
+                    <Setter TargetName="Tag" Property="Background" Value="{StaticResource GoldBrush}" />
+                    <Setter TargetName="TagText" Property="Foreground" Value="{StaticResource MidnightBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
         <Style x:Key="PageScroller" TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
@@ -114,27 +161,38 @@
             <Rectangle Fill="{StaticResource WindowGroundBrush}" IsHitTestVisible="False" />
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="236" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- ═════════════ SIDEBAR ═════════════ -->
-                <Border Background="#8C0B1B3A" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
-                    <DockPanel Margin="14,10,14,16">
-                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,6,0,26">
+                <!-- ═════════════ SIDEBAR: expanded, icon rail (c:Shell.IsCompact) or hidden ═════════════ -->
+                <Border x:Name="Sidebar" Width="236" ClipToBounds="True" Background="#8C0B1B3A" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
+                    <DockPanel Margin="14,4,14,16">
+                        <Button x:Name="PaneButton" DockPanel.Dock="Top" Style="{StaticResource ChromeIconButton}" HorizontalAlignment="Left"
+                                Click="OnPaneButton" ToolTip="Collapse navigation" AutomationProperties.Name="Collapse navigation">
+                            <Path Data="{StaticResource IconSidebar}" Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.6" StrokeLineJoin="Round"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                        <StackPanel x:Name="Brand" DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,6,0,22">
                             <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="40" Height="40" RenderOptions.BitmapScalingMode="HighQuality" />
-                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <StackPanel x:Name="BrandText" Margin="10,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="OptimAdhan" FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
                                 <TextBlock Text="Your Daily Prayer Companion" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" />
                             </StackPanel>
                         </StackPanel>
 
-                        <Border DockPanel.Dock="Bottom" Style="{StaticResource Inset}" Padding="14,8">
+                        <Border x:Name="QuickToggles" DockPanel.Dock="Bottom" Style="{StaticResource Inset}" Padding="14,8">
                             <StackPanel>
                                 <CheckBox x:Name="SidebarAdhanSwitch" Content="Adhan" Click="OnSidebarAdhan" AutomationProperties.Name="Play the Adhan" />
                                 <CheckBox x:Name="SidebarWidgetSwitch" Content="Desktop widget" Click="OnSidebarWidget" AutomationProperties.Name="Show the desktop widget" />
                             </StackPanel>
                         </Border>
+                        <StackPanel x:Name="RailToggles" DockPanel.Dock="Bottom" Visibility="Collapsed">
+                            <CheckBox x:Name="RailAdhanSwitch" Style="{StaticResource RailToggle}" Tag="{StaticResource IconSpeaker}" Click="OnSidebarAdhan"
+                                      AutomationProperties.Name="Play the Adhan" />
+                            <CheckBox x:Name="RailWidgetSwitch" Style="{StaticResource RailToggle}" Tag="{StaticResource IconWidget}" Click="OnSidebarWidget"
+                                      AutomationProperties.Name="Show the desktop widget" />
+                        </StackPanel>
 
                         <StackPanel x:Name="NavPanel" KeyboardNavigation.DirectionalNavigation="Cycle">
                             <RadioButton x:Name="NavToday" Style="{StaticResource NavItem}" Tag="{StaticResource IconToday}" Content="Today" Checked="OnNav" IsChecked="True" />
@@ -149,13 +207,24 @@
                 <!-- ═════════════ CONTENT ═════════════ -->
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="44" />
+                        <RowDefinition x:Name="TitleRow" Height="44" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <!-- Title bar: drag area plus caption buttons -->
-                    <DockPanel>
+                    <!-- Title bar: drag area, sidebar restore (when hidden), layout tools and caption buttons -->
+                    <DockPanel x:Name="TitleBar">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <Button x:Name="ViewButton" Style="{StaticResource CaptionButton}" IsTabStop="True" Click="OnViewMenu"
+                                    ToolTip="Layout and full screen" AutomationProperties.Name="Layout options">
+                                <Path Data="{StaticResource IconLayout}" Width="14" Height="14" Stretch="Uniform" StrokeThickness="1.2" StrokeLineJoin="Round"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button x:Name="FullScreenButton" Style="{StaticResource CaptionButton}" IsTabStop="True" Click="OnToggleFullScreen"
+                                    ToolTip="Full screen (F11)" AutomationProperties.Name="Full screen">
+                                <Path Data="{StaticResource IconFullScreen}" Width="13" Height="13" Stretch="Uniform" StrokeThickness="1.2"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Border Width="1" Height="16" Margin="4,0" Background="{StaticResource HairlineBrush}" VerticalAlignment="Center" />
                             <Button Style="{StaticResource CaptionButton}" Click="OnMinimize" AutomationProperties.Name="Minimize">
                                 <Path Data="M0,0.5 H10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
                             </Button>
@@ -166,171 +235,246 @@
                                 <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
                             </Button>
                         </StackPanel>
+                        <StackPanel x:Name="HiddenNavBar" Orientation="Horizontal" Margin="10,4,0,0" VerticalAlignment="Top" Visibility="Collapsed">
+                            <Button x:Name="RestorePaneButton" Style="{StaticResource ChromeIconButton}" Click="OnRestoreSidebar"
+                                    ToolTip="Show navigation (Ctrl+B)" AutomationProperties.Name="Show navigation">
+                                <Path Data="{StaticResource IconSidebar}" Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.6" StrokeLineJoin="Round"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Image Source="pack://application:,,,/Assets/Brand/symbol.png" Width="22" Height="22" Margin="8,0,0,0" VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <TextBlock Text="OptimAdhan" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="{StaticResource DisplayFont}" FontSize="14"
+                                       FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                        </StackPanel>
                         <TextBlock x:Name="CaptionText" Margin="32,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Text="{Binding TimeZoneNote}" />
                     </DockPanel>
 
                     <Grid x:Name="Pages" Grid.Row="1">
-                        <!-- ═════════════ TODAY ═════════════ -->
-                        <ScrollViewer x:Name="TodayPage" Style="{StaticResource PageScroller}">
-                            <Grid Margin="32,4,32,32" MaxWidth="1240">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Right" Click="OnLocationChip" VerticalAlignment="Center" Padding="14,0" ToolTip="Change location"
-                                            AutomationProperties.Name="Change location">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Path Data="{StaticResource IconPin}" Width="15" Height="15" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.6" />
-                                            <TextBlock Text="{Binding City}" Margin="8,0,0,0" />
-                                            <TextBlock Text="{Binding ZoneShort}" Margin="8,0,0,0" FontWeight="Normal" Foreground="{StaticResource TextTertiaryBrush}" />
-                                        </StackPanel>
-                                    </Button>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Gregorian}" Style="{StaticResource PageTitle}" />
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding Hijri}" Foreground="{StaticResource ChampagneBrush}" FontSize="14" />
-                                            <TextBlock Text="  ·  " Foreground="{StaticResource TextTertiaryBrush}" />
-                                            <TextBlock Text="{Binding Clock}" Foreground="{StaticResource TextSecondaryBrush}" Typography.NumeralAlignment="Tabular" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <Border Grid.Row="1" Margin="0,16,0,0" CornerRadius="12" Padding="16,12" Background="#26FF9C8A" BorderBrush="#66FF9C8A" BorderThickness="1"
-                                        Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="Open settings" Click="OnLocationChip" Margin="12,0,0,0" />
-                                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    </DockPanel>
-                                </Border>
-
-                                <Grid x:Name="HeroRow" Grid.Row="2" Margin="0,20,0,0" Visibility="{Binding HasSchedule, Converter={StaticResource BoolToVisibility}}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition x:Name="SideColumn" Width="300" />
-                                    </Grid.ColumnDefinitions>
+                        <!-- ═════════════ TODAY ═════════════
+                             Scaled up as a whole on large and full-screen displays (TodayScale), never stretched. -->
+                        <ScrollViewer x:Name="TodayPage" Style="{StaticResource PageScroller}" SizeChanged="OnTodayViewportChanged">
+                            <Grid x:Name="TodayScaleHost">
+                                <Grid.LayoutTransform>
+                                    <ScaleTransform x:Name="TodayScale" ScaleX="1" ScaleY="1" />
+                                </Grid.LayoutTransform>
+                                <Grid x:Name="TodayContent" Margin="32,4,32,32" MaxWidth="1240">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
-                                    <!-- Next prayer hero -->
-                                    <Border Style="{StaticResource HeroCard}" ClipToBounds="True">
-                                        <Grid>
-                                            <Rectangle Fill="{StaticResource KhatamPatternBrush}" Opacity="0.05" Width="340" HorizontalAlignment="Right" IsHitTestVisible="False" />
-                                            <Grid Margin="30,26">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Grid Width="200" Height="200" VerticalAlignment="Center">
-                                                    <c:ProgressRing Progress="{Binding Progress}" StrokeWidth="8" />
-                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <TextBlock Text="STARTS IN" Style="{StaticResource Overline}" HorizontalAlignment="Center" />
-                                                        <TextBlock Text="{Binding NextCountdown}" Style="{StaticResource DisplayText}" FontSize="38" HorizontalAlignment="Center" Margin="0,2,0,0" />
-                                                        <TextBlock Text="hours : min : sec" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" />
-                                                    </StackPanel>
-                                                </Grid>
-                                                <StackPanel Grid.Column="1" Margin="34,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="NEXT PRAYER" Style="{StaticResource Overline}" FontSize="12" />
-                                                    <WrapPanel Margin="0,6,0,0">
-                                                        <TextBlock Text="{Binding NextName}" FontFamily="{StaticResource DisplayFont}" FontSize="54" FontWeight="SemiBold" Margin="0,0,18,0" />
-                                                        <TextBlock Text="{Binding NextArabic}" Style="{StaticResource ArabicText}" FontSize="40" LineHeight="56" Margin="0,8,0,0" />
-                                                    </WrapPanel>
-                                                    <Border Style="{StaticResource Inset}" Padding="14,8" Margin="0,10,0,0" HorizontalAlignment="Left">
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="Adhan at" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBlock Text="{Binding NextTime}" Margin="10,0,0,0" FontSize="22" FontWeight="SemiBold" Typography.NumeralAlignment="Tabular" />
-                                                        </StackPanel>
-                                                    </Border>
-                                                    <WrapPanel Margin="0,16,0,0">
-                                                        <Border x:Name="AdhanPill" CornerRadius="16" Padding="12,0" Height="32" Margin="0,0,10,8" Background="{StaticResource EmeraldFaintBrush}">
-                                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <Path Data="{StaticResource IconSpeaker}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource EmeraldSoftBrush}" StrokeThickness="1.8" />
-                                                                <TextBlock Text="{Binding AdhanStatus}" Margin="8,0,0,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource EmeraldSoftBrush}" />
-                                                            </StackPanel>
-                                                        </Border>
-                                                        <Button x:Name="MuteNextButton" Content="Mute next Adhan" Click="OnMuteNext" Height="32" MinHeight="32" Margin="0,0,10,8" FontWeight="Normal" FontSize="13" />
-                                                        <Button x:Name="StopAudioButton" Content="Stop Adhan" Click="OnStopSound" Height="32" MinHeight="32" Margin="0,0,10,8" Style="{StaticResource PrimaryButton}" FontSize="13" Visibility="Collapsed" />
-                                                    </WrapPanel>
-                                                    <TextBlock Text="{Binding MuteNote}" Style="{StaticResource Caption}" Foreground="{StaticResource ChampagneBrush}" />
-                                                </StackPanel>
-                                            </Grid>
-                                        </Grid>
-                                    </Border>
-
-                                    <!-- Secondary information -->
-                                    <StackPanel x:Name="SidePanel" Grid.Column="1" Margin="16,0,0,0">
-                                        <Border Style="{StaticResource Card}" Padding="20">
-                                            <StackPanel>
-                                                <TextBlock Text="NOW" Style="{StaticResource Overline}" />
-                                                <TextBlock Text="{Binding CurrentTitle}" Style="{StaticResource SectionTitle}" Margin="0,6,0,4" />
-                                                <TextBlock Text="{Binding CurrentDetail}" Style="{StaticResource Caption}" />
-                                            </StackPanel>
-                                        </Border>
-                                        <Button x:Name="RamadanCardButton" Margin="0,14,0,0" Padding="0" Click="OnOpenRamadan" HorizontalContentAlignment="Stretch"
-                                                AutomationProperties.Name="Open Ramadan Imsakia">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="Bd" CornerRadius="16" Padding="20" BorderThickness="1" BorderBrush="#4DFFD65A" Background="{StaticResource CardFillBrush}">
-                                                        <ContentPresenter />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="#99FFD65A" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                            <StackPanel>
-                                                <TextBlock Text="RAMADAN" Style="{StaticResource Overline}" />
-                                                <StackPanel Visibility="{Binding IsRamadan, Converter={StaticResource BoolToVisibility}}" Margin="0,6,0,0">
-                                                    <TextBlock Text="{Binding RamadanDay}" Style="{StaticResource SectionTitle}" />
-                                                    <Grid Margin="0,6,0,0">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition />
-                                                            <ColumnDefinition />
-                                                        </Grid.ColumnDefinitions>
-                                                        <StackPanel>
-                                                            <TextBlock Text="Sehri ends" Style="{StaticResource Hint}" />
-                                                            <TextBlock Text="{Binding SehriTime}" FontSize="18" FontWeight="SemiBold" />
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="1">
-                                                            <TextBlock Text="Iftar" Style="{StaticResource Hint}" />
-                                                            <TextBlock Text="{Binding IftarTime}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
-                                                        </StackPanel>
-                                                    </Grid>
-                                                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}">
-                                                        <Run Text="{Binding FastLabel, Mode=OneWay}" /> <Run Text="{Binding FastCountdown, Mode=OneWay}" Foreground="{StaticResource IvoryBrush}" />
-                                                    </TextBlock>
-                                                </StackPanel>
-                                                <StackPanel x:Name="RamadanTeaserPanel" Margin="0,6,0,0">
-                                                    <TextBlock Text="{Binding RamadanTeaser}" Style="{StaticResource SectionTitle}" />
-                                                    <TextBlock Text="{Binding RamadanTeaserDate}" Style="{StaticResource Caption}" />
-                                                    <TextBlock Text="View the Imsakia ›" Margin="0,8,0,0" FontSize="13" Foreground="{StaticResource GoldBrush}" />
-                                                </StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Click="OnLocationChip" VerticalAlignment="Center" Padding="14,0" ToolTip="Change location"
+                                                AutomationProperties.Name="Change location">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="{StaticResource IconPin}" Width="15" Height="15" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}" StrokeThickness="1.6" />
+                                                <TextBlock Text="{Binding City}" Margin="8,0,0,0" />
+                                                <TextBlock Text="{Binding ZoneShort}" Margin="8,0,0,0" FontWeight="Normal" Foreground="{StaticResource TextTertiaryBrush}" />
                                             </StackPanel>
                                         </Button>
-                                    </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Gregorian}" Style="{StaticResource PageTitle}" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                <TextBlock Text="{Binding Hijri}" Foreground="{StaticResource ChampagneBrush}" FontSize="14" />
+                                                <TextBlock Text="  ·  " Foreground="{StaticResource TextTertiaryBrush}" />
+                                                <TextBlock Text="{Binding Clock}" Foreground="{StaticResource TextSecondaryBrush}" Typography.NumeralAlignment="Tabular" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <Border Grid.Row="1" Margin="0,16,0,0" CornerRadius="12" Padding="16,12" Background="#26FF9C8A" BorderBrush="#66FF9C8A" BorderThickness="1"
+                                            Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="Open settings" Click="OnLocationChip" Margin="12,0,0,0" />
+                                            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </Border>
+
+                                    <Grid x:Name="HeroRow" Grid.Row="2" Margin="0,20,0,0" Visibility="{Binding HasSchedule, Converter={StaticResource BoolToVisibility}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition x:Name="SideColumn" Width="300" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Next prayer hero -->
+                                        <Border Style="{StaticResource HeroCard}" ClipToBounds="True">
+                                            <Grid>
+                                                <Rectangle Fill="{StaticResource KhatamPatternBrush}" Opacity="0.05" Width="340" HorizontalAlignment="Right" IsHitTestVisible="False" />
+                                                <Grid x:Name="HeroLayout" Margin="30,26">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid Width="200" Height="200" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                                        <c:ProgressRing Progress="{Binding Progress}" StrokeWidth="8" />
+                                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                            <TextBlock Text="STARTS IN" Style="{StaticResource Overline}" HorizontalAlignment="Center" />
+                                                            <TextBlock Text="{Binding NextCountdown}" Style="{StaticResource DisplayText}" FontSize="38" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                                            <TextBlock Text="hours : min : sec" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <StackPanel x:Name="HeroText" Grid.Column="1" Margin="34,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="NEXT PRAYER" Style="{StaticResource Overline}" FontSize="12" />
+                                                        <WrapPanel Margin="0,6,0,0">
+                                                            <TextBlock Text="{Binding NextName}" FontFamily="{StaticResource DisplayFont}" FontSize="54" FontWeight="SemiBold" Margin="0,0,18,0" />
+                                                            <TextBlock Text="{Binding NextArabic}" Style="{StaticResource ArabicText}" FontSize="40" LineHeight="56" Margin="0,8,0,0" />
+                                                        </WrapPanel>
+                                                        <Border Style="{StaticResource Inset}" Padding="14,8" Margin="0,10,0,0" HorizontalAlignment="Left">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="Adhan at" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="{Binding NextTime}" Margin="10,0,0,0" FontSize="22" FontWeight="SemiBold" Typography.NumeralAlignment="Tabular" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <WrapPanel Margin="0,16,0,0">
+                                                            <Border x:Name="AdhanPill" CornerRadius="16" Padding="12,0" Height="32" Margin="0,0,10,8" Background="{StaticResource EmeraldFaintBrush}">
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <Path Data="{StaticResource IconSpeaker}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource EmeraldSoftBrush}" StrokeThickness="1.8" />
+                                                                    <TextBlock Text="{Binding AdhanStatus}" Margin="8,0,0,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource EmeraldSoftBrush}" />
+                                                                </StackPanel>
+                                                            </Border>
+                                                            <Button x:Name="MuteNextButton" Content="Mute next Adhan" Click="OnMuteNext" Height="32" MinHeight="32" Margin="0,0,10,8" FontWeight="Normal" FontSize="13" />
+                                                            <Button x:Name="StopAudioButton" Content="Stop Adhan" Click="OnStopSound" Height="32" MinHeight="32" Margin="0,0,10,8" Style="{StaticResource PrimaryButton}" FontSize="13" Visibility="Collapsed" />
+                                                        </WrapPanel>
+                                                        <TextBlock Text="{Binding MuteNote}" Style="{StaticResource Caption}" Foreground="{StaticResource ChampagneBrush}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Secondary information -->
+                                        <StackPanel x:Name="SidePanel" Grid.Column="1" Margin="16,0,0,0">
+                                            <Border Style="{StaticResource Card}" Padding="20">
+                                                <StackPanel>
+                                                    <TextBlock Text="NOW" Style="{StaticResource Overline}" />
+                                                    <TextBlock Text="{Binding CurrentTitle}" Style="{StaticResource SectionTitle}" Margin="0,6,0,4" />
+                                                    <TextBlock Text="{Binding CurrentDetail}" Style="{StaticResource Caption}" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Button x:Name="RamadanCardButton" Margin="0,14,0,0" Padding="0" Click="OnOpenRamadan" HorizontalContentAlignment="Stretch"
+                                                    AutomationProperties.Name="Open Ramadan Imsakia">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" CornerRadius="16" Padding="20" BorderThickness="1" BorderBrush="#4DFFD65A" Background="{StaticResource CardFillBrush}">
+                                                            <ContentPresenter />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="#99FFD65A" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                                <StackPanel>
+                                                    <TextBlock Text="RAMADAN" Style="{StaticResource Overline}" />
+                                                    <StackPanel Visibility="{Binding IsRamadan, Converter={StaticResource BoolToVisibility}}" Margin="0,6,0,0">
+                                                        <TextBlock Text="{Binding RamadanDay}" Style="{StaticResource SectionTitle}" />
+                                                        <Grid Margin="0,6,0,0">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition />
+                                                                <ColumnDefinition />
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel>
+                                                                <TextBlock Text="Sehri ends" Style="{StaticResource Hint}" />
+                                                                <TextBlock Text="{Binding SehriTime}" FontSize="18" FontWeight="SemiBold" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1">
+                                                                <TextBlock Text="Iftar" Style="{StaticResource Hint}" />
+                                                                <TextBlock Text="{Binding IftarTime}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}">
+                                                            <Run Text="{Binding FastLabel, Mode=OneWay}" /> <Run Text="{Binding FastCountdown, Mode=OneWay}" Foreground="{StaticResource IvoryBrush}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel x:Name="RamadanTeaserPanel" Margin="0,6,0,0">
+                                                        <TextBlock Text="{Binding RamadanTeaser}" Style="{StaticResource SectionTitle}" />
+                                                        <TextBlock Text="{Binding RamadanTeaserDate}" Style="{StaticResource Caption}" />
+                                                        <TextBlock Text="View the Imsakia ›" Margin="0,8,0,0" FontSize="13" Foreground="{StaticResource GoldBrush}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Grid.Row="3" Text="{Binding TimesHeading}" Style="{StaticResource Overline}" FontSize="12" Margin="0,22,0,0" />
+                                    <ItemsControl x:Name="PrayerCards" Grid.Row="3" Margin="0,44,-12,0" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource PrayerCardTemplate}"
+                                                  Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="6" Loaded="OnCardsGridLoaded" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+
+                                    <!-- Day timetable: from today (or the rest of Ramadan), as many days as fit without scrolling -->
+                                    <Border x:Name="DayTableCard" Grid.Row="4" Style="{StaticResource Card}" Padding="8,10,8,10" Margin="0,6,0,14" Visibility="Collapsed">
+                                        <StackPanel>
+                                            <DockPanel Margin="15,0,6,4">
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button x:Name="DayTableToday" Style="{StaticResource SubtleButton}" Content="Back to today" Click="OnDayTableToday" Margin="0,0,6,0" Padding="10,0"
+                                                            Height="28" MinHeight="28" FontSize="12.5" Foreground="{StaticResource GoldBrush}" BorderBrush="#66FFD65A" Visibility="Collapsed" />
+                                                    <Button x:Name="DayTableEarlier" Style="{StaticResource ChromeIconButton}" Width="30" Height="28" Click="OnDayTableEarlier"
+                                                            ToolTip="Earlier days" AutomationProperties.Name="Earlier days">
+                                                        <TextBlock Text="‹" FontSize="18" Margin="0,-3,0,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                    </Button>
+                                                    <Button x:Name="DayTableLater" Style="{StaticResource ChromeIconButton}" Width="30" Height="28" Click="OnDayTableLater"
+                                                            ToolTip="Later days" AutomationProperties.Name="Later days">
+                                                        <TextBlock Text="›" FontSize="18" Margin="0,-3,0,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                    </Button>
+                                                    <Button x:Name="DayTableLink" Style="{StaticResource SubtleButton}" Content="Full month ›" Click="OnDayTableLink" Margin="10,0,0,0" Padding="8,0"
+                                                            Height="28" MinHeight="28" FontSize="12.5" Foreground="{StaticResource GoldBrush}" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock x:Name="DayTableTitle" Style="{StaticResource Overline}" FontSize="12" Foreground="{StaticResource GoldBrush}" VerticalAlignment="Center" />
+                                                    <TextBlock x:Name="DayTableRange" Margin="12,0,0,0" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <Grid x:Name="DayTableHeader" Margin="15,0,15,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.Resources>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Overline}">
+                                                        <Setter Property="HorizontalAlignment" Value="Right" />
+                                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                                        <Setter Property="Foreground" Value="{StaticResource ChampagneBrush}" />
+                                                        <Setter Property="FontSize" Value="11" />
+                                                    </Style>
+                                                </Grid.Resources>
+                                                <TextBlock Text="DATE" HorizontalAlignment="Left" />
+                                                <TextBlock x:Name="Head0" Grid.Column="1" />
+                                                <TextBlock x:Name="Head1" Grid.Column="2" />
+                                                <TextBlock x:Name="Head2" Grid.Column="3" />
+                                                <TextBlock x:Name="Head3" Grid.Column="4" />
+                                                <TextBlock x:Name="Head4" Grid.Column="5" />
+                                                <TextBlock x:Name="Head5" Grid.Column="6" />
+                                            </Grid>
+                                            <ItemsControl x:Name="DayTableList" ItemTemplate="{StaticResource DayRowTemplate}" Focusable="False" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock Grid.Row="5" Margin="0,4,0,0" Style="{StaticResource Hint}">
+                                        <Run Text="{Binding MethodNote, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding LocationName, Mode=OneWay}" />
+                                    </TextBlock>
                                 </Grid>
-
-                                <TextBlock Grid.Row="3" Text="{Binding TimesHeading}" Style="{StaticResource Overline}" FontSize="12" Margin="0,22,0,0" />
-                                <ItemsControl x:Name="PrayerCards" Grid.Row="3" Margin="0,44,-12,0" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource PrayerCardTemplate}"
-                                              Focusable="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Columns="6" Loaded="OnCardsGridLoaded" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-
-                                <TextBlock Grid.Row="4" Margin="0,4,0,0" Style="{StaticResource Hint}">
-                                    <Run Text="{Binding MethodNote, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding LocationName, Mode=OneWay}" />
-                                </TextBlock>
                             </Grid>
                         </ScrollViewer>
 
@@ -853,6 +997,21 @@
                         </ScrollViewer>
                     </Grid>
                 </Grid>
+
+                <!-- Full screen: the only chrome. Fades after a moment; any mouse movement brings it back. -->
+                <Border x:Name="FullScreenBar" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,18,22,0" Visibility="Collapsed">
+                    <Button Click="OnToggleFullScreen" Padding="14,0" ToolTip="Exit full screen (Esc or F11)" AutomationProperties.Name="Exit full screen">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconExitFullScreen}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource ChampagneBrush}"
+                                  StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                            <TextBlock Text="Exit full screen" Margin="9,0,0,0" FontWeight="Normal" VerticalAlignment="Center" />
+                            <Border Margin="10,0,0,0" CornerRadius="5" Padding="6,1" Background="#14FFFFFF" BorderBrush="{StaticResource HairlineBrush}"
+                                    BorderThickness="1" VerticalAlignment="Center">
+                                <TextBlock Text="Esc" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                </Border>
             </Grid>
         </Grid>
     </Border>

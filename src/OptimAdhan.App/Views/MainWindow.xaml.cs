@@ -9,7 +9,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shell;
 using System.Windows.Threading;
+using OptimAdhan.App.Controls;
 using OptimAdhan.App.Services;
 using OptimAdhan.App.ViewModels;
 using OptimAdhan.Core.Calculation;
@@ -31,6 +33,12 @@ public sealed record DayRow(string Dow, int DayNumber, string HijriText, string 
     public bool HasTag => Tag.Length > 0;
 }
 
+/// <summary>One day of the dashboard timetable; Times follow the header of its kind (see DayRowTemplate).</summary>
+public sealed record DayTableRow(string Dow, string DateText, string Tag, bool IsToday, bool IsRamadan, string[] Times)
+{
+    public bool HasTag => Tag.Length > 0;
+}
+
 public sealed record RamadanRow(int Day, string DateText, string Sehri, string Fajr, string Dhuhr,
     string Asr, string Iftar, string Isha, bool IsToday, Brush DayBadge);
 
@@ -46,6 +54,23 @@ public partial class MainWindow : Window
     }
 
     private static readonly int[] ReminderChoices = [0, 5, 10, 15, 20, 30];
+
+    private const double ExpandedSidebarWidth = 236;
+    private const double RailWidth = 72;
+
+    /// <summary>Below this window width an expanded sidebar shows as the icon rail (the user's choice is kept).</summary>
+    private const double AutoCollapseWidth = 1000;
+
+    /// <summary>Largest uniform scale for Today on big and full-screen displays.</summary>
+    private const double MaxTodayScale = 1.5;
+
+    /// <summary>The day timetable card: one row (DayRowTemplate height) and everything around the rows.</summary>
+    private const double DayRowHeight = 32;
+    private const double DayTableChrome = 108;
+
+    /// <summary>After browsing, the timetable returns to today by itself (it is often left on a wall or second screen).</summary>
+    private static readonly TimeSpan BrowseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly Color FrameBorder = Color.FromRgb(0x1C, 0x2C, 0x4D);
 
     private static readonly Brush[] AshraBadges =
     [
@@ -64,6 +89,23 @@ public partial class MainWindow : Window
     private DateOnly _month;
     private bool _loading;
     private CancellationTokenSource? _locationCts;
+    private readonly WindowChrome _windowedChrome;
+    private readonly DispatcherTimer _fullScreenBarTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
+    private Page _page = Page.Today;
+    private NavigationMode _navigation;
+    private NavigationMode _lastVisibleNavigation;
+    private NavigationMode? _shownNavigation;
+    private bool _expandedWhileNarrow;
+    private bool _fullScreen;
+    private Rect _windowedBounds;
+    private WindowState _windowedState;
+    private Page _pageBeforeFullScreen;
+    private (DateOnly Today, int Offset, PrayerScheduleService Schedule, bool Use24)? _dayTableKey;
+    private TimetableWindow? _dayTable;
+    private IReadOnlyList<DayTableRow> _dayTableRows = [];
+    private int _dayTableOffset;
+    private int _dayTableShown;
+    private DateTime _dayTableBrowsedUtc;
 
     public MainWindow(AppController app)
     {
@@ -75,20 +117,32 @@ public partial class MainWindow : Window
         _month = app.Schedule is { } s ? s.LocalDate(DateTime.UtcNow) : DateOnly.FromDateTime(DateTime.Today);
         _month = new DateOnly(_month.Year, _month.Month, 1);
 
+        _windowedChrome = WindowChrome.GetWindowChrome(this);
+        _navigation = app.Settings.MainWindow.Navigation;
+        _lastVisibleNavigation = _navigation == NavigationMode.Hidden ? NavigationMode.Expanded : _navigation;
+        RestorePlacement(app.Settings.MainWindow);
+
         BuildSettingsControls();
         LoadSettings();
         RefreshAll();
+        ApplyNavigation(animate: false);
 
         SourceInitialized += (_, _) => ApplyMaterial();
         StateChanged += (_, _) => UpdateMaximizeState();
-        SizeChanged += (_, _) => ApplyResponsiveLayout();
+        SizeChanged += (_, _) => OnWindowSizeChanged();
+        DpiChanged += (_, _) => OnDisplayChanged();
         _clock.Tick += (_, _) => Tick();
         _clock.Start();
+        _fullScreenBarTimer.Tick += (_, _) => FadeFullScreenBar();
         _app.SettingsChanged += OnSettingsChanged;
         _app.AudioStateChanged += OnAudioStateChanged;
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+        Closing += (_, _) => SavePlacement();
         Closed += (_, _) =>
         {
             _clock.Stop();
+            _fullScreenBarTimer.Stop();
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             _locationCts?.Cancel();
             _app.SettingsChanged -= OnSettingsChanged;
             _app.AudioStateChanged -= OnAudioStateChanged;
@@ -98,6 +152,14 @@ public partial class MainWindow : Window
 
     public void Navigate(Page page)
     {
+        if (_fullScreen && page != Page.Today)
+        {
+            // Full screen is the Today dashboard; anything else returns to the window first.
+            _pageBeforeFullScreen = page;
+            ExitFullScreen();
+            return;
+        }
+
         var nav = page switch
         {
             Page.Timetable => NavMonthly,
@@ -122,7 +184,7 @@ public partial class MainWindow : Window
     {
         var hwnd = new WindowInteropHelper(this).Handle;
         WindowEffects.UseDarkFrame(hwnd);
-        WindowEffects.SetBorderColor(hwnd, Color.FromRgb(0x1C, 0x2C, 0x4D));
+        WindowEffects.SetBorderColor(hwnd, FrameBorder);
 
         // The main window is solid midnight with soft painted light (no system backdrop):
         // identical on Windows 10 and 11, and no native caption buttons bleeding through.
@@ -136,6 +198,7 @@ public partial class MainWindow : Window
         }
 
         _dashboard.Refresh();
+        RefreshDayTable();
         MuteNextButton.Content = _app.IsNextAdhanSkipped ? "Unmute next Adhan" : "Mute next Adhan";
         RamadanTeaserPanel.Visibility = _dashboard.IsRamadan ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -159,6 +222,7 @@ public partial class MainWindow : Window
 
     private void ShowPage(Page page)
     {
+        _page = page;
         FrameworkElement target = page switch
         {
             Page.Timetable => MonthlyPage,
@@ -196,6 +260,14 @@ public partial class MainWindow : Window
 
     private void UpdateMaximizeState()
     {
+        if (_fullScreen && WindowState == WindowState.Maximized)
+        {
+            // Win+Up or a title-bar double-click from full screen: become an ordinary maximized window.
+            _windowedState = WindowState.Maximized;
+            ExitFullScreen();
+            return;
+        }
+
         // Maximized WindowChrome windows overhang the screen by the frame width.
         RootBorder.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
         MaxIcon.Data = Geometry.Parse(WindowState == WindowState.Maximized
@@ -220,25 +292,492 @@ public partial class MainWindow : Window
 
     private void OnCloseWindow(object sender, RoutedEventArgs e) => Close();
 
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled)
+        {
+            return; // an open drop-down or text box used the key
+        }
+
+        var modifiers = Keyboard.Modifiers;
+        if (e.Key == Key.F11 && modifiers == ModifierKeys.None)
+        {
+            ToggleFullScreen();
+        }
+        else if (e.Key == Key.Escape && _fullScreen)
+        {
+            ExitFullScreen();
+        }
+        else if (e.Key == Key.B && modifiers == ModifierKeys.Control)
+        {
+            ToggleSidebar();
+        }
+        else if (e.Key is >= Key.D1 and <= Key.D5 && modifiers == ModifierKeys.Control)
+        {
+            Navigate((Page)(e.Key - Key.D1)); // Ctrl+1…5 follow the sidebar order
+        }
+        else
+        {
+            return;
+        }
+
+        e.Handled = true;
+    }
+
+    // ───────────────────────── Window placement ─────────────────────────
+
+    private void RestorePlacement(MainWindowSettings saved)
+    {
+        if (saved is { Left: { } left, Top: { } top, Width: { } width, Height: { } height }
+            && MonitorPlacement.IsOnScreen(left, top, width))
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Left = left;
+            Top = top;
+            Width = Math.Max(width, MinWidth);
+            Height = Math.Max(height, MinHeight);
+        }
+
+        if (saved.Maximized)
+        {
+            WindowState = WindowState.Maximized;
+            UpdateMaximizeState();
+        }
+    }
+
+    /// <summary>Remembers the windowed size and maximized state. Full screen itself is not restored at start-up.</summary>
+    private void SavePlacement()
+    {
+        var bounds = _fullScreen ? _windowedBounds : RestoreBounds;
+        if (bounds.IsEmpty || bounds.Width < 1)
+        {
+            return;
+        }
+
+        var maximized = _fullScreen ? _windowedState == WindowState.Maximized : WindowState == WindowState.Maximized;
+        _app.Update(s => s with
+        {
+            MainWindow = s.MainWindow with
+            {
+                Left = Math.Round(bounds.Left),
+                Top = Math.Round(bounds.Top),
+                Width = Math.Round(bounds.Width),
+                Height = Math.Round(bounds.Height),
+                Maximized = maximized,
+            },
+        });
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(OnDisplayChanged);
+
+    /// <summary>Monitor, resolution or scaling changed: keep full screen covering the monitor exactly.</summary>
+    private void OnDisplayChanged()
+    {
+        if (_fullScreen)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                if (_fullScreen)
+                {
+                    MonitorPlacement.Cover(this, MonitorPlacement.MonitorOf(this));
+                }
+            });
+        }
+    }
+
+    // ───────────────────────── Sidebar: expanded, icon rail, hidden ─────────────────────────
+
+    private bool IsNarrow => ActualWidth > 0 && ActualWidth < AutoCollapseWidth;
+
+    /// <summary>What the sidebar shows now: the user's choice, folded to the rail in narrow windows, gone in full screen.</summary>
+    private NavigationMode ShownNavigation =>
+        _fullScreen ? NavigationMode.Hidden
+        : _navigation == NavigationMode.Expanded && IsNarrow && !_expandedWhileNarrow ? NavigationMode.Collapsed
+        : _navigation;
+
+    private void SetNavigation(NavigationMode mode)
+    {
+        if (mode != NavigationMode.Hidden)
+        {
+            _lastVisibleNavigation = mode;
+        }
+
+        _expandedWhileNarrow = mode == NavigationMode.Expanded && IsNarrow;
+        if (mode != _navigation)
+        {
+            _navigation = mode;
+            _app.Update(s => s with { MainWindow = s.MainWindow with { Navigation = mode } });
+        }
+
+        ApplyNavigation(animate: true);
+    }
+
+    private void ApplyNavigation(bool animate)
+    {
+        var mode = ShownNavigation;
+        if (mode == _shownNavigation)
+        {
+            return;
+        }
+
+        var sidebarHadFocus = Sidebar.IsKeyboardFocusWithin;
+        _shownNavigation = mode;
+        var compact = mode != NavigationMode.Expanded;
+        Shell.SetIsCompact(Sidebar, compact);
+        BrandText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        Brand.Margin = compact ? new Thickness(2, 6, 0, 22) : new Thickness(4, 6, 0, 22);
+        QuickToggles.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        RailToggles.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        HiddenNavBar.Visibility = mode == NavigationMode.Hidden && !_fullScreen ? Visibility.Visible : Visibility.Collapsed;
+        var paneAction = mode == NavigationMode.Expanded ? "Collapse navigation" : "Expand navigation";
+        PaneButton.ToolTip = paneAction;
+        AutomationProperties.SetName(PaneButton, paneAction);
+
+        var width = mode switch
+        {
+            NavigationMode.Expanded => ExpandedSidebarWidth,
+            NavigationMode.Collapsed => RailWidth,
+            _ => 0,
+        };
+        Sidebar.Visibility = Visibility.Visible;
+        if (animate && IsLoaded && WindowEffects.AnimationsEnabled)
+        {
+            var slide = new DoubleAnimation(Sidebar.ActualWidth, width, TimeSpan.FromMilliseconds(200))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            slide.Completed += (_, _) => SettleSidebar(mode, width);
+            Sidebar.BeginAnimation(WidthProperty, slide);
+        }
+        else
+        {
+            SettleSidebar(mode, width);
+        }
+
+        if (sidebarHadFocus && mode == NavigationMode.Hidden && !_fullScreen)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () => RestorePaneButton.Focus());
+        }
+    }
+
+    private void SettleSidebar(NavigationMode mode, double width)
+    {
+        if (_shownNavigation != mode)
+        {
+            return; // a newer change took over mid-slide
+        }
+
+        Sidebar.BeginAnimation(WidthProperty, null);
+        Sidebar.Width = width;
+        Sidebar.Visibility = width > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnWindowSizeChanged()
+    {
+        if (!IsNarrow)
+        {
+            _expandedWhileNarrow = false;
+        }
+
+        ApplyNavigation(animate: true);
+    }
+
+    private void OnPaneButton(object sender, RoutedEventArgs e) =>
+        SetNavigation(ShownNavigation == NavigationMode.Expanded ? NavigationMode.Collapsed : NavigationMode.Expanded);
+
+    private void OnRestoreSidebar(object sender, RoutedEventArgs e) => ShowSidebar();
+
+    private void ShowSidebar()
+    {
+        SetNavigation(_lastVisibleNavigation);
+        var selected = NavPanel.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true) ?? NavToday;
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () => selected.Focus());
+    }
+
+    /// <summary>Ctrl+B: hide the sidebar, or bring back whichever form it had.</summary>
+    private void ToggleSidebar()
+    {
+        if (_fullScreen)
+        {
+            return;
+        }
+
+        if (_navigation == NavigationMode.Hidden)
+        {
+            ShowSidebar();
+        }
+        else
+        {
+            SetNavigation(NavigationMode.Hidden);
+        }
+    }
+
+    private void OnViewMenu(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = ViewButton, Placement = PlacementMode.Bottom };
+        menu.Items.Add(NavigationMenuItem("Expanded sidebar", NavigationMode.Expanded, ""));
+        menu.Items.Add(NavigationMenuItem("Icons only", NavigationMode.Collapsed, ""));
+        menu.Items.Add(NavigationMenuItem("Hide sidebar", NavigationMode.Hidden, "Ctrl+B"));
+        menu.Items.Add(new Separator());
+        var fullScreen = new MenuItem { Header = "Full-screen dashboard", InputGestureText = "F11" };
+        fullScreen.Click += (_, _) => EnterFullScreen();
+        menu.Items.Add(fullScreen);
+        menu.IsOpen = true;
+    }
+
+    private MenuItem NavigationMenuItem(string header, NavigationMode mode, string gesture)
+    {
+        var item = new MenuItem { Header = header, InputGestureText = gesture, IsCheckable = true, IsChecked = _navigation == mode };
+        item.Click += (_, _) => SetNavigation(mode);
+        return item;
+    }
+
+    // ───────────────────────── Full screen ─────────────────────────
+
+    private void OnToggleFullScreen(object sender, RoutedEventArgs e) => ToggleFullScreen();
+
+    private void ToggleFullScreen()
+    {
+        if (_fullScreen)
+        {
+            ExitFullScreen();
+        }
+        else
+        {
+            EnterFullScreen();
+        }
+    }
+
+    /// <summary>
+    /// The Today dashboard alone, covering the monitor the window is on (taskbar included).
+    /// It is an ordinary window sized to the monitor, never topmost, so Adhan alerts still appear above it.
+    /// </summary>
+    private void EnterFullScreen()
+    {
+        if (_fullScreen)
+        {
+            return;
+        }
+
+        var monitor = MonitorPlacement.MonitorOf(this);
+        _windowedBounds = RestoreBounds;
+        _windowedState = WindowState == WindowState.Maximized ? WindowState.Maximized : WindowState.Normal;
+        _pageBeforeFullScreen = _page;
+        _fullScreen = true;
+
+        WindowChrome.SetWindowChrome(this, new WindowChrome
+        {
+            CaptionHeight = 0,
+            ResizeBorderThickness = new Thickness(0),
+            GlassFrameThickness = new Thickness(0),
+            UseAeroCaptionButtons = false,
+            CornerRadius = new CornerRadius(0),
+        });
+        WindowState = WindowState.Normal;
+        UpdateMaximizeState();
+        TitleRow.Height = new GridLength(0);
+        TitleBar.Visibility = Visibility.Collapsed;
+        TodayContent.Margin = new Thickness(48, 36, 48, 36);
+        Navigate(Page.Today);
+        ApplyNavigation(animate: false);
+        WindowEffects.SetEdgeToEdge(new WindowInteropHelper(this).Handle, true, FrameBorder);
+        MonitorPlacement.Cover(this, monitor);
+        FullScreenBar.Visibility = Visibility.Visible;
+        ShowFullScreenBar();
+        ApplyTodayLayout();
+    }
+
+    private void ExitFullScreen()
+    {
+        if (!_fullScreen)
+        {
+            return;
+        }
+
+        _fullScreen = false;
+        _fullScreenBarTimer.Stop();
+        FullScreenBar.Visibility = Visibility.Collapsed;
+        Cursor = null;
+        WindowChrome.SetWindowChrome(this, _windowedChrome);
+        WindowEffects.SetEdgeToEdge(new WindowInteropHelper(this).Handle, false, FrameBorder);
+        TitleRow.Height = new GridLength(44);
+        TitleBar.Visibility = Visibility.Visible;
+        TodayContent.Margin = new Thickness(32, 4, 32, 32);
+        if (WindowState == WindowState.Normal)
+        {
+            Left = _windowedBounds.Left;
+            Top = _windowedBounds.Top;
+            Width = _windowedBounds.Width;
+            Height = _windowedBounds.Height;
+        }
+
+        if (_windowedState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
+
+        UpdateMaximizeState();
+        ApplyNavigation(animate: false);
+        Navigate(_pageBeforeFullScreen);
+        ApplyTodayLayout();
+    }
+
+    private void ShowFullScreenBar()
+    {
+        FullScreenBar.BeginAnimation(OpacityProperty, null);
+        FullScreenBar.Opacity = 1;
+        Cursor = null;
+        _fullScreenBarTimer.Stop();
+        _fullScreenBarTimer.Start();
+    }
+
+    /// <summary>After a moment without the mouse, the exit button and pointer fade so nothing sits over the dashboard.</summary>
+    private void FadeFullScreenBar()
+    {
+        _fullScreenBarTimer.Stop();
+        if (!_fullScreen || FullScreenBar.IsMouseOver || FullScreenBar.IsKeyboardFocusWithin)
+        {
+            if (_fullScreen)
+            {
+                _fullScreenBarTimer.Start();
+            }
+
+            return;
+        }
+
+        FullScreenBar.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(WindowEffects.AnimationsEnabled ? 400 : 0)));
+        Cursor = Cursors.None;
+    }
+
+    protected override void OnPreviewMouseMove(MouseEventArgs e)
+    {
+        base.OnPreviewMouseMove(e);
+        if (_fullScreen)
+        {
+            ShowFullScreenBar();
+        }
+    }
+
+    // ───────────────────────── Responsive Today ─────────────────────────
+
+    private void OnTodayViewportChanged(object sender, SizeChangedEventArgs e) => ApplyTodayLayout();
+
     private void OnCardsGridLoaded(object sender, RoutedEventArgs e)
     {
         _cardsGrid = (UniformGrid)sender;
-        ApplyResponsiveLayout();
+        ApplyTodayLayout();
     }
 
-    /// <summary>Re-flows Today for narrow windows (small laptops, high display scaling).</summary>
-    private void ApplyResponsiveLayout()
+    /// <summary>
+    /// Fits Today to its space. Narrow windows re-flow (side cards under the hero, prayer cards in
+    /// two rows, hero stacked); tall windows add the week ahead; large and full-screen displays
+    /// scale the whole dashboard uniformly, capped, centred at its design width. Runs on resize only.
+    /// </summary>
+    private void ApplyTodayLayout()
     {
-        var width = ActualWidth - 236;
-        var narrow = width < 900;
-        SideColumn.Width = narrow ? new GridLength(0) : new GridLength(300);
-        Grid.SetColumn(SidePanel, narrow ? 0 : 1);
-        Grid.SetRow(SidePanel, narrow ? 1 : 0);
-        SidePanel.Margin = narrow ? new Thickness(0, 14, 0, 0) : new Thickness(16, 0, 0, 0);
+        var width = TodayPage.ActualWidth;
+        var height = TodayPage.ActualHeight;
+        if (width <= 0 || height <= 0)
+        {
+            return; // not on screen; runs again when it is
+        }
+
+        var margin = TodayContent.Margin;
+        var designWidth = TodayContent.MaxWidth + margin.Left + margin.Right;
+        var layoutWidth = Math.Min(width, designWidth);
+        if (Reflow(layoutWidth - margin.Left - margin.Right))
+        {
+            // Measurements are only trustworthy after the re-flow has been laid out once.
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, ApplyTodayLayout);
+        }
+
+        // The day timetable is extra: as many days as fit without scrolling, or none if fewer than three
+        // would (fewer is fine only when that is all that is left, on the last days of Ramadan).
+        // Rows have a fixed height, so the table is sized arithmetically rather than by trial measuring.
+        DayTableCard.Visibility = Visibility.Collapsed;
+        var natural = NaturalTodayHeight(layoutWidth);
+        var fit = (int)Math.Floor((height - natural - DayTableChrome) / DayRowHeight);
+        var days = _dashboard.HasSchedule ? Math.Min(fit, _dayTableRows.Count) : 0;
+        if (days > 0 && days >= Math.Min(3, _dayTableRows.Count))
+        {
+            ShowDayTable(days);
+            natural += DayTableChrome + days * DayRowHeight;
+        }
+
+        var scale = Math.Clamp(Math.Min(width / designWidth, height / natural), 1, MaxTodayScale);
+        if (Math.Abs(scale - TodayScale.ScaleX) > 0.01)
+        {
+            TodayScale.ScaleX = TodayScale.ScaleY = scale;
+        }
+
+        TodayScaleHost.VerticalAlignment = _fullScreen ? VerticalAlignment.Center : VerticalAlignment.Top;
+    }
+
+    private void ShowDayTable(int days)
+    {
+        DayTableCard.Visibility = Visibility.Visible;
+        if (_dayTable is not { } table || (DayTableList.ItemsSource as ICollection<DayTableRow>)?.Count == days)
+        {
+            return;
+        }
+
+        _dayTableShown = days;
+        DayTableList.ItemsSource = _dayTableRows.Take(days).ToList();
+        var culture = CultureInfo.CurrentCulture;
+        var first = table.Days[0];
+        var last = table.Days[days - 1];
+        if (table.Ramadan is { } ramadan)
+        {
+            DayTableTitle.Text = $"RAMADAN {ramadan.HijriYear} IMSAKIA";
+            DayTableRange.Text = first.RamadanDay == last.RamadanDay ? $"Day {first.RamadanDay} of {ramadan.Days}"
+                : $"Days {first.RamadanDay}–{last.RamadanDay} of {ramadan.Days}";
+        }
+        else
+        {
+            DayTableTitle.Text = table.IsAtToday ? $"NEXT {days} DAYS" : "PRAYER TIMES";
+            DayTableRange.Text = $"{first.Date.ToString("ddd d MMM", culture)} – {last.Date.ToString("ddd d MMM", culture)}";
+        }
+
+        DayTableEarlier.IsEnabled = table.HasEarlier;
+        DayTableLater.IsEnabled = table.HasLater(days);
+        DayTableToday.Visibility = table.IsAtToday ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private double NaturalTodayHeight(double width)
+    {
+        TodayContent.Measure(new Size(width, double.PositiveInfinity));
+        return TodayContent.DesiredSize.Height;
+    }
+
+    /// <summary>Arranges Today for its width; true when anything moved.</summary>
+    private bool Reflow(double contentWidth)
+    {
+        var stackSide = contentWidth < 840;
+        var stackHero = contentWidth < 600;
+        var columns = contentWidth < 700 ? 3 : 6;
+        var changed = Grid.GetRow(SidePanel) != (stackSide ? 1 : 0)
+            || Grid.GetRow(HeroText) != (stackHero ? 1 : 0)
+            || (_cardsGrid is not null && _cardsGrid.Columns != columns);
+
+        SideColumn.Width = stackSide ? new GridLength(0) : new GridLength(300);
+        Grid.SetColumn(SidePanel, stackSide ? 0 : 1);
+        Grid.SetRow(SidePanel, stackSide ? 1 : 0);
+        SidePanel.Margin = stackSide ? new Thickness(0, 14, 0, 0) : new Thickness(16, 0, 0, 0);
+
+        Grid.SetColumn(HeroText, stackHero ? 0 : 1);
+        Grid.SetRow(HeroText, stackHero ? 1 : 0);
+        Grid.SetColumnSpan(HeroText, stackHero ? 2 : 1);
+        HeroText.Margin = stackHero ? new Thickness(0, 22, 0, 0) : new Thickness(34, 0, 0, 0);
+
         if (_cardsGrid is not null)
         {
-            _cardsGrid.Columns = width < 760 ? 3 : 6;
+            _cardsGrid.Columns = columns;
         }
+
+        DayTableLink.Visibility = contentWidth < 760 ? Visibility.Collapsed : Visibility.Visible;
+        DayTableRange.Visibility = contentWidth < 640 ? Visibility.Collapsed : Visibility.Visible;
+        return changed;
     }
 
     private void OnSettingsChanged(object? sender, EventArgs e)
@@ -253,6 +792,7 @@ public partial class MainWindow : Window
     private void RefreshAll()
     {
         Tick();
+        ApplyTodayLayout();
         if (MonthlyPage.Visibility == Visibility.Visible)
         {
             RefreshTimetable();
@@ -269,15 +809,100 @@ public partial class MainWindow : Window
 
     private void OnMuteNext(object sender, RoutedEventArgs e) => _app.ToggleSkipNextAdhan();
 
+    private void OnDayTableLink(object sender, RoutedEventArgs e) =>
+        Navigate(_dayTable?.Kind == TimetableKind.Ramadan ? Page.Ramadan : Page.Timetable);
+
+    private void OnDayTableEarlier(object sender, RoutedEventArgs e) => BrowseDayTable((_dayTable?.Offset ?? 0) - Math.Max(_dayTableShown, 1));
+
+    private void OnDayTableLater(object sender, RoutedEventArgs e) => BrowseDayTable((_dayTable?.Offset ?? 0) + Math.Max(_dayTableShown, 1));
+
+    private void OnDayTableToday(object sender, RoutedEventArgs e) => BrowseDayTable(0);
+
+    private void BrowseDayTable(int offset)
+    {
+        _dayTableOffset = offset;
+        _dayTableBrowsedUtc = DateTime.UtcNow;
+        RefreshDayTable();
+        if (offset == 0 && DayTableToday.IsKeyboardFocusWithin)
+        {
+            DayTableLater.Focus(); // the Back to today button is about to disappear
+        }
+    }
+
+    // The expanded switches and the icon-rail toggles are two views of the same two settings.
     private void OnSidebarAdhan(object sender, RoutedEventArgs e) =>
-        _app.Update(s => s with { Adhan = s.Adhan with { Enabled = SidebarAdhanSwitch.IsChecked == true } });
+        _app.Update(s => s with { Adhan = s.Adhan with { Enabled = ((CheckBox)sender).IsChecked == true } });
 
     private void OnSidebarWidget(object sender, RoutedEventArgs e) =>
-        _app.Update(s => s with { Widget = s.Widget with { Visible = SidebarWidgetSwitch.IsChecked == true } });
+        _app.Update(s => s with { Widget = s.Widget with { Visible = ((CheckBox)sender).IsChecked == true } });
 
     // ───────────────────────── Timetable ─────────────────────────
 
     private string T(DateTimeOffset? time) => Format.Time(time, _app.Settings.Use24HourClock);
+
+    /// <summary>
+    /// The dashboard timetable: today and the following days, or today and the rest of Ramadan.
+    /// "Today" is the prayer location's date, so the table moves on by itself at the location's
+    /// midnight. Rebuilt only when that date, the browsing position, the location or the clock format changes.
+    /// </summary>
+    private void RefreshDayTable()
+    {
+        if (_app.Schedule is not { } schedule)
+        {
+            _dayTableKey = null;
+            _dayTable = null;
+            _dayTableRows = [];
+            DayTableList.ItemsSource = null;
+            return;
+        }
+
+        var utcNow = DateTime.UtcNow;
+        if (_dayTableOffset != 0 && utcNow - _dayTableBrowsedUtc > BrowseTimeout)
+        {
+            _dayTableOffset = 0;
+        }
+
+        var key = (schedule.LocalDate(utcNow), _dayTableOffset, schedule, _app.Settings.Use24HourClock);
+        if (_dayTableKey == key)
+        {
+            return;
+        }
+
+        _dayTableKey = key;
+        var table = DashboardTimetable.Build(schedule, utcNow, _dayTableOffset);
+        _dayTable = table;
+        var ramadan = table.Kind == TimetableKind.Ramadan;
+        var culture = CultureInfo.CurrentCulture;
+        _dayTableRows = table.Days.Select(d => new DayTableRow(
+            d.Date.ToString("ddd", culture),
+            d.Date.ToString("d MMM", culture),
+            ramadan ? (d.Date == table.Today ? $"Today · Day {d.RamadanDay}" : $"Day {d.RamadanDay}")
+                : d.Date == table.Today ? "Today"
+                : d.Date.DayOfWeek == DayOfWeek.Friday ? "Jumu'ah"
+                : d.Hijri?.Day == 1 ? d.Hijri.Value.MonthName : "",
+            d.Date == table.Today,
+            ramadan,
+            ramadan
+                ? [T(d.SehriEnd), T(d.Get(Prayer.Fajr)), T(d.Get(Prayer.Dhuhr)), T(d.Get(Prayer.Asr)), T(d.Iftar), T(d.Get(Prayer.Isha))]
+                : [T(d.Get(Prayer.Fajr)), T(d.Get(Prayer.Sunrise)), T(d.Get(Prayer.Dhuhr)), T(d.Get(Prayer.Asr)), T(d.Get(Prayer.Maghrib)), T(d.Get(Prayer.Isha))]))
+            .ToList();
+
+        string[] heads = ramadan
+            ? ["SEHRI ENDS", "FAJR", "DHUHR", "ASR", "IFTAR", "ISHA"]
+            : ["FAJR", "SUNRISE", "DHUHR", "ASR", "MAGHRIB", "ISHA"];
+        TextBlock[] headers = [Head0, Head1, Head2, Head3, Head4, Head5];
+        for (var i = 0; i < headers.Length; i++)
+        {
+            headers[i].Text = heads[i];
+        }
+
+        Head0.Foreground = ramadan ? Frozen(Color.FromRgb(0xC9, 0xD8, 0xFF)) : (Brush)FindResource("ChampagneBrush");
+        Head4.Foreground = (Brush)FindResource(ramadan ? "GoldBrush" : "ChampagneBrush");
+        DayTableLink.Content = ramadan ? "Full Imsakia ›" : "Full month ›";
+
+        DayTableList.ItemsSource = null; // ApplyTodayLayout shows as many of these as fit
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, ApplyTodayLayout);
+    }
 
     private void RefreshTimetable()
     {
@@ -523,7 +1148,8 @@ public partial class MainWindow : Window
 
             var a = s.Adhan;
             AdhanEnabledBox.IsChecked = a.Enabled;
-            SidebarAdhanSwitch.IsChecked = a.Enabled;
+            SidebarAdhanSwitch.IsChecked = RailAdhanSwitch.IsChecked = a.Enabled;
+            RailAdhanSwitch.ToolTip = a.Enabled ? "Adhan is on" : "Adhan is off";
             SoundBox.SelectedItem = _app.Sounds.Adhans.FirstOrDefault(x => x.Id == a.DefaultSoundId) ?? _app.Sounds.Adhans.FirstOrDefault();
             FajrSoundBox.SelectedItem = _app.Sounds.Adhans.FirstOrDefault(x => x.Id == a.FajrSoundId) ?? _app.Sounds.Adhans.FirstOrDefault();
             VolumeSlider.Value = a.Volume;
@@ -543,8 +1169,9 @@ public partial class MainWindow : Window
             StartupBox.IsChecked = s.StartWithWindows;
             Clock24Box.IsChecked = s.Use24HourClock;
             WidgetVisibleBox.IsChecked = s.Widget.Visible;
-            SidebarWidgetSwitch.IsChecked = s.Widget.Visible;
-            SidebarWidgetSwitch.IsEnabled = s.Location is not null;
+            SidebarWidgetSwitch.IsChecked = RailWidgetSwitch.IsChecked = s.Widget.Visible;
+            SidebarWidgetSwitch.IsEnabled = RailWidgetSwitch.IsEnabled = s.Location is not null;
+            RailWidgetSwitch.ToolTip = s.Widget.Visible ? "Desktop widget is shown" : "Desktop widget is hidden";
             WidgetStandard.IsChecked = s.Widget.Layout == WidgetLayout.Standard;
             WidgetCompact.IsChecked = s.Widget.Layout == WidgetLayout.Compact;
             WidgetOpacitySlider.Value = s.Widget.Opacity;

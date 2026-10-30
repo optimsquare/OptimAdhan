@@ -25,6 +25,8 @@ public static class WindowEffects
     private const int DwmwaWindowCornerPreference = 33;
     private const int DwmwaBorderColor = 34;
     private const int DwmwaSystemBackdropType = 38;
+    private const int DwmwcpDefault = 0;
+    private const int DwmwcpDoNotRound = 1;
     private const int DwmwcpRound = 2;
     private const int DwmwcpRoundSmall = 3;
     private const int WmNcActivate = 0x0086;
@@ -77,6 +79,22 @@ public static class WindowEffects
     {
         var colorRef = color.R | (color.G << 8) | (color.B << 16);
         _ = DwmSetWindowAttribute(hwnd, DwmwaBorderColor, ref colorRef, sizeof(int));
+    }
+
+    /// <summary>Square corners and no DWM border while the window covers a whole monitor; restores both afterwards.</summary>
+    public static void SetEdgeToEdge(IntPtr hwnd, bool edgeToEdge, Color borderColor)
+    {
+        var pref = edgeToEdge ? DwmwcpDoNotRound : DwmwcpDefault;
+        _ = DwmSetWindowAttribute(hwnd, DwmwaWindowCornerPreference, ref pref, sizeof(int));
+        if (edgeToEdge)
+        {
+            var none = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
+            _ = DwmSetWindowAttribute(hwnd, DwmwaBorderColor, ref none, sizeof(int));
+        }
+        else
+        {
+            SetBorderColor(hwnd, borderColor);
+        }
     }
 
     /// <summary>

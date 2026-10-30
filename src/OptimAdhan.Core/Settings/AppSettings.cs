@@ -21,6 +21,8 @@ public sealed record AppSettings
 
     public WidgetSettings Widget { get; init; } = new();
 
+    public MainWindowSettings MainWindow { get; init; } = new();
+
     public bool StartWithWindows { get; init; } = true;
 
     public bool Use24HourClock { get; init; }
@@ -179,4 +181,33 @@ public sealed record WidgetSettings
     public bool AlwaysOnTop { get; init; }
 
     public bool Locked { get; init; }
+}
+
+/// <summary>How the main window's sidebar is shown.</summary>
+public enum NavigationMode
+{
+    /// <summary>Icons and labels.</summary>
+    Expanded,
+
+    /// <summary>A narrow rail of icons with tooltips.</summary>
+    Collapsed,
+
+    /// <summary>No sidebar; a title-bar button brings it back.</summary>
+    Hidden,
+}
+
+public sealed record MainWindowSettings
+{
+    public NavigationMode Navigation { get; init; } = NavigationMode.Expanded;
+
+    /// <summary>Restored (not maximized) bounds in device-independent pixels; null centres the window.</summary>
+    public double? Left { get; init; }
+
+    public double? Top { get; init; }
+
+    public double? Width { get; init; }
+
+    public double? Height { get; init; }
+
+    public bool Maximized { get; init; }
 }
