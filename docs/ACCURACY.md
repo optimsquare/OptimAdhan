@@ -75,6 +75,5 @@ the days either side of Ramadan 1447, 1448 and 1449: **0 mismatches**.
   ±2-day offset aligns the Imsakia.
 - **Above about 48° latitude**, twilight-based Fajr and Isha need a high-latitude rule.
   The default is adhan's recommendation (seventh of the night above 48°), and users can change it.
-- **Adhan recordings (development):** the web app's `Adhan Makkah.mp3` (about 51 s) and
-  `Adhan Madina.mp3` (about 25 s) are 32 kbps excerpts. Replace them with licensed,
-  full-length recordings before public release (see `Assets/Audio/sounds.json`).
+- **Adhan recordings:** seven bundled recordings, several at low bitrates (8 to 16 kbps), with
+  unconfirmed licences. Replace or license them before public release (see [AUDIO.md](AUDIO.md)).

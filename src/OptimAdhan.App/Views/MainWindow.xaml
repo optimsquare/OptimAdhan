@@ -359,10 +359,43 @@
                                                             </StackPanel>
                                                         </Border>
                                                         <WrapPanel Margin="0,16,0,0">
-                                                            <Border x:Name="AdhanPill" CornerRadius="16" Padding="12,0" Height="32" Margin="0,0,10,8" Background="{StaticResource EmeraldFaintBrush}">
+                                                            <!-- Adhan On (emerald) or Adhan Off (coral, crossed speaker); recordings are chosen in Settings. -->
+                                                            <Border x:Name="AdhanPill" CornerRadius="16" Padding="12,0" Height="32" Margin="0,0,10,8" BorderThickness="1">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Background" Value="{StaticResource EmeraldFaintBrush}" />
+                                                                        <Setter Property="BorderBrush" Value="#402BB58A" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding AdhanOn}" Value="False">
+                                                                                <Setter Property="Background" Value="#1FFF9C8A" />
+                                                                                <Setter Property="BorderBrush" Value="#40FF9C8A" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
                                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                                    <Path Data="{StaticResource IconSpeaker}" Width="14" Height="14" Stretch="Uniform" Stroke="{StaticResource EmeraldSoftBrush}" StrokeThickness="1.8" />
-                                                                    <TextBlock Text="{Binding AdhanStatus}" Margin="8,0,0,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource EmeraldSoftBrush}" />
+                                                                    <StackPanel.Resources>
+                                                                        <Style TargetType="Path">
+                                                                            <Setter Property="Data" Value="{StaticResource IconSpeaker}" />
+                                                                            <Setter Property="Stroke" Value="{StaticResource EmeraldSoftBrush}" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding AdhanOn}" Value="False">
+                                                                                    <Setter Property="Data" Value="{StaticResource IconSpeakerOff}" />
+                                                                                    <Setter Property="Stroke" Value="{StaticResource CoralBrush}" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Foreground" Value="{StaticResource EmeraldSoftBrush}" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding AdhanOn}" Value="False">
+                                                                                    <Setter Property="Foreground" Value="{StaticResource CoralBrush}" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </StackPanel.Resources>
+                                                                    <Path Width="14" Height="14" Stretch="Uniform" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                                                                    <TextBlock Text="{Binding AdhanStatus}" Margin="8,0,0,0" FontSize="13" FontWeight="SemiBold" />
                                                                 </StackPanel>
                                                             </Border>
                                                             <Button x:Name="MuteNextButton" Content="Mute next Adhan" Click="OnMuteNext" Height="32" MinHeight="32" Margin="0,0,10,8" FontWeight="Normal" FontSize="13" />
@@ -840,11 +873,11 @@
                                                     <WrapPanel x:Name="CustomAnglesPanel" Margin="0,14,0,0">
                                                         <StackPanel Orientation="Horizontal" Margin="0,0,18,8">
                                                             <TextBlock Text="Fajr angle" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
-                                                            <TextBox x:Name="FajrAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Fajr angle" />
+                                                            <TextBox x:Name="FajrAngleBox" Width="80" AutomationProperties.Name="Fajr angle" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                                             <TextBlock Text="Isha angle" Style="{StaticResource FieldLabel}" Margin="0,0,10,0" />
-                                                            <TextBox x:Name="IshaAngleBox" Width="80" LostFocus="OnCalculationChanged" AutomationProperties.Name="Isha angle" />
+                                                            <TextBox x:Name="IshaAngleBox" Width="80" AutomationProperties.Name="Isha angle" />
                                                         </StackPanel>
                                                     </WrapPanel>
                                                 </StackPanel>
@@ -866,49 +899,51 @@
                                                     </StackPanel>
                                                 </DockPanel>
                                             </CheckBox>
-                                            <Grid Style="{StaticResource SettingsRow}" Margin="0,16,0,0">
+                                            <!-- Default Adhan: every prayer left on "Default" follows it. -->
+                                            <TextBlock Text="Default Adhan" Style="{StaticResource FieldLabel}" Margin="0,18,0,0" />
+                                            <TextBlock Style="{StaticResource Hint}" Text="Plays for every prayer set to Default." Margin="0,0,0,8" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ComboBox x:Name="SoundBox" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" AutomationProperties.Name="Default Adhan" />
+                                                <Button Grid.Column="1" Click="OnTestSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Preview the Default Adhan" AutomationProperties.Name="Preview Default Adhan">
+                                                    <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
+                                                </Button>
+                                            </Grid>
+                                            <Grid Margin="0,14,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                </Grid.RowDefinitions>
-                                                <TextBlock Text="Adhan" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
-                                                <ComboBox x:Name="SoundBox" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Adhan sound" />
-                                                <Button Grid.Column="2" Click="OnTestSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Preview" AutomationProperties.Name="Preview Adhan">
-                                                    <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
-                                                </Button>
-                                                <TextBlock Grid.Row="1" Text="Fajr Adhan" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
-                                                <ComboBox x:Name="FajrSoundBox" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Name" SelectionChanged="OnAdhanChanged" Margin="0,4" AutomationProperties.Name="Fajr Adhan sound" />
-                                                <Button Grid.Row="1" Grid.Column="2" Click="OnTestFajrSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Preview" AutomationProperties.Name="Preview Fajr Adhan">
-                                                    <StackPanel Orientation="Horizontal"><Path Data="M7,4 L20,12 L7,20 Z" Fill="{StaticResource GoldBrush}" Width="10" Height="12" Stretch="Uniform" /><TextBlock Text="Preview" Margin="8,0,0,0" /></StackPanel>
-                                                </Button>
-                                                <TextBlock Grid.Row="2" Text="Volume" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
-                                                <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,8">
+                                                <TextBlock Text="Volume" Style="{StaticResource FieldLabel}" Margin="0,0,16,0" />
+                                                <DockPanel Grid.Column="1">
                                                     <TextBlock x:Name="VolumeText" DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
                                                     <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="5" ValueChanged="OnVolumeChanged"
                                                             VerticalAlignment="Center" AutomationProperties.Name="Adhan volume" SmallChange="5" LargeChange="10" />
                                                 </DockPanel>
-                                                <Button Grid.Row="2" Grid.Column="2" Content="Stop" Click="OnStopSound" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                                <Button Grid.Column="2" Click="OnStopSound" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Stop any sound that is playing" AutomationProperties.Name="Stop sound">
+                                                    <StackPanel Orientation="Horizontal"><Rectangle Width="9" Height="9" RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource GoldBrush}" /><TextBlock Text="Stop" Margin="8,0,0,0" /></StackPanel>
+                                                </Button>
                                             </Grid>
 
-                                            <TextBlock Text="Each prayer" Style="{StaticResource FieldLabel}" Margin="0,18,0,0" />
-                                            <TextBlock Style="{StaticResource Hint}" Text="The Adhan and an optional reminder before it." Margin="0,0,0,8" />
-                                            <Border Style="{StaticResource Inset}" Padding="14,4">
+                                            <!-- Per prayer: on/off, and Default or a specific recording. Rows are built in code. -->
+                                            <TextBlock Text="Each prayer" Style="{StaticResource FieldLabel}" Margin="0,20,0,0" />
+                                            <TextBlock Style="{StaticResource Hint}" Text="Keep Default or pick a recording. Switch a prayer off to skip its Adhan." Margin="0,0,0,8" />
+                                            <Border Style="{StaticResource Inset}" Padding="14,6">
                                                 <Grid x:Name="PerPrayerGrid">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                 </Grid>
                                             </Border>
                                             <Button Content="Test the Adhan alert" Click="OnTestAlert" HorizontalAlignment="Left" Margin="0,16,0,0"
-                                                    ToolTip="Plays the Adhan and shows the alert exactly as it will appear at prayer time." />
+                                                    ToolTip="Plays the next prayer's Adhan and shows the alert exactly as it will appear at prayer time." />
                                         </StackPanel>
                                     </Border>
 
@@ -927,9 +962,17 @@
                                             <CheckBox x:Name="NotificationsBox" Click="OnAdhanChanged" Margin="0,16,0,0">
                                                 <StackPanel>
                                                     <TextBlock Text="Prayer reminders" />
-                                                    <TextBlock Style="{StaticResource Hint}" Text="Show a notification when a reminder you set for a prayer is due." />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="A notification a few minutes before each prayer you choose below." />
                                                 </StackPanel>
                                             </CheckBox>
+                                            <Border Style="{StaticResource Inset}" Padding="14,4" Margin="0,10,0,0">
+                                                <Grid x:Name="RemindersGrid">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                </Grid>
+                                            </Border>
                                             <CheckBox x:Name="QuietFullScreenBox" Click="OnAdhanChanged" Margin="0,12,0,0">
                                                 <StackPanel>
                                                     <TextBlock Text="Quiet during full-screen apps and presentations" />

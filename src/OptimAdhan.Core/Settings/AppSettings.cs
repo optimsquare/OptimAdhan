@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using OptimAdhan.Core.Calculation;
 using OptimAdhan.Core.Location;
 
@@ -6,7 +7,8 @@ namespace OptimAdhan.Core.Settings;
 /// <summary>All user preferences. Persisted as JSON by <see cref="SettingsStore"/>.</summary>
 public sealed record AppSettings
 {
-    public const int CurrentVersion = 1;
+    /// <summary>2: one Default Adhan; a separate Fajr sound became Fajr's own override.</summary>
+    public const int CurrentVersion = 2;
 
     public int Version { get; init; } = CurrentVersion;
 
@@ -26,6 +28,18 @@ public sealed record AppSettings
     public bool StartWithWindows { get; init; } = true;
 
     public bool Use24HourClock { get; init; }
+
+    /// <summary>Brings settings saved by an older version up to <see cref="CurrentVersion"/>.</summary>
+    public AppSettings Migrate()
+    {
+        var settings = this;
+        if (settings.Version < 2)
+        {
+            settings = settings with { Adhan = settings.Adhan.MigrateFajrSound() };
+        }
+
+        return settings with { Version = CurrentVersion };
+    }
 }
 
 public enum HighLatitudeSetting
@@ -91,7 +105,7 @@ public sealed record PrayerAlert
 {
     public bool AdhanEnabled { get; init; } = true;
 
-    /// <summary>Sound ID from the sound library; null uses the default for this prayer.</summary>
+    /// <summary>Sound ID from the sound library; null follows <see cref="AdhanSettings.DefaultSoundId"/>.</summary>
     public string? SoundId { get; init; }
 
     /// <summary>Minutes before the prayer for a reminder notification; 0 turns it off.</summary>
@@ -106,9 +120,12 @@ public sealed record AdhanSettings
     /// <summary>0–100.</summary>
     public int Volume { get; init; } = 80;
 
-    public string DefaultSoundId { get; init; } = "makkah";
+    /// <summary>The Default Adhan, played for every prayer without its own <see cref="PrayerAlert.SoundId"/>.</summary>
+    public string DefaultSoundId { get; init; } = "adhan-1";
 
-    public string FajrSoundId { get; init; } = "makkah";
+    /// <summary>Version 1 only: a separate Fajr sound. Read once by <see cref="AppSettings.Migrate"/>, never written.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FajrSoundId { get; init; }
 
     public PrayerAlert Fajr { get; init; } = new();
 
@@ -145,8 +162,20 @@ public sealed record AdhanSettings
         _ => throw new ArgumentOutOfRangeException(nameof(prayer), prayer, "Only the five daily prayers have alerts."),
     };
 
-    public string SoundFor(Prayer prayer) =>
-        For(prayer).SoundId ?? (prayer == Prayer.Fajr ? FajrSoundId : DefaultSoundId);
+    /// <summary>The recording for a prayer: its own choice, or the Default Adhan.</summary>
+    public string SoundFor(Prayer prayer) => For(prayer).SoundId ?? DefaultSoundId;
+
+    /// <summary>A version 1 Fajr sound that differed from the default becomes Fajr's override.</summary>
+    internal AdhanSettings MigrateFajrSound()
+    {
+        var keep = FajrSoundId is { } fajr && Fajr.SoundId is null
+            && !string.Equals(fajr, DefaultSoundId, StringComparison.OrdinalIgnoreCase);
+        return this with
+        {
+            Fajr = keep ? Fajr with { SoundId = FajrSoundId } : Fajr,
+            FajrSoundId = null,
+        };
+    }
 }
 
 public sealed record RamadanSettings

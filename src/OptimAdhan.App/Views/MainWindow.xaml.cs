@@ -27,6 +27,9 @@ public sealed record Option<T>(T Value, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>One prayer's row of Adhan settings, plus its reminder in the Notifications card.</summary>
+public sealed record PrayerAdhanControls(CheckBox Adhan, ComboBox Sound, Button Preview, ComboBox Reminder);
+
 public sealed record DayRow(string Dow, int DayNumber, string HijriText, string Fajr, string Sunrise, string Dhuhr,
     string Asr, string Maghrib, string Isha, bool IsToday, string Tag, bool IsMonthStart)
 {
@@ -82,7 +85,7 @@ public partial class MainWindow : Window
     private readonly AppController _app;
     private readonly Dashboard _dashboard;
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
-    private readonly Dictionary<Prayer, (CheckBox Adhan, ComboBox Reminder)> _perPrayer = [];
+    private readonly Dictionary<Prayer, PrayerAdhanControls> _perPrayer = [];
     private readonly Dictionary<Prayer, TextBox> _adjustments = [];
     private IReadOnlyList<RamadanRow> _ramadanRows = [];
     private UniformGrid? _cardsGrid;
@@ -91,6 +94,10 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _locationCts;
     private readonly WindowChrome _windowedChrome;
     private readonly DispatcherTimer _fullScreenBarTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
+
+    /// <summary>Saves a typed minute offset or angle once the user pauses, so Today updates without leaving the box.</summary>
+    private readonly DispatcherTimer _numberCommit = new() { Interval = TimeSpan.FromMilliseconds(600) };
+    private bool _committingWhileTyping;
     private Page _page = Page.Today;
     private NavigationMode _navigation;
     private NavigationMode _lastVisibleNavigation;
@@ -137,7 +144,15 @@ public partial class MainWindow : Window
         _app.SettingsChanged += OnSettingsChanged;
         _app.AudioStateChanged += OnAudioStateChanged;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
-        Closing += (_, _) => SavePlacement();
+        Closing += (_, _) =>
+        {
+            if (_numberCommit.IsEnabled)
+            {
+                CommitNumbers(); // a value typed just before closing still counts
+            }
+
+            SavePlacement();
+        };
         Closed += (_, _) =>
         {
             _clock.Stop();
@@ -1056,7 +1071,7 @@ public partial class MainWindow : Window
         {
             var box = new TextBox { Width = 56, Margin = new Thickness(0, 4, 10, 0), HorizontalContentAlignment = HorizontalAlignment.Center };
             AutomationProperties.SetName(box, $"{PrayerNames.English(prayer)} adjustment in minutes");
-            box.LostFocus += OnCalculationChanged;
+            WireNumberBox(box);
             var cell = new StackPanel();
             cell.Children.Add(new TextBlock { Text = PrayerNames.English(prayer), FontSize = 12, Foreground = (Brush)FindResource("TextSecondaryBrush") });
             cell.Children.Add(box);
@@ -1065,38 +1080,136 @@ public partial class MainWindow : Window
         }
 
         var reminderOptions = ReminderChoices
-            .Select(m => new Option<int>(m, m == 0 ? "No reminder" : $"Remind {m} min before")).ToList();
+            .Select(m => new Option<int>(m, m == 0 ? "No reminder" : $"{m} min before")).ToList();
         var row = 0;
         foreach (var prayer in PrayerScheduleService.FivePrayers)
         {
+            var name = PrayerNames.English(prayer);
+
+            // Adhan and sounds: name, recording (Default or a specific one), preview, on/off.
             PerPrayerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 0) };
-            label.Children.Add(new TextBlock { Text = PrayerNames.English(prayer), FontWeight = FontWeights.SemiBold, Width = 76, VerticalAlignment = VerticalAlignment.Center });
-            label.Children.Add(new TextBlock
+            var label = PrayerLabel(prayer);
+            var sound = new ComboBox { DisplayMemberPath = nameof(Option<string?>.Label), Margin = new Thickness(0, 6, 0, 6), MinWidth = 150 };
+            AutomationProperties.SetName(sound, $"{name} Adhan recording");
+            sound.SelectionChanged += OnAdhanChanged;
+            var preview = new Button
             {
-                Text = PrayerNames.Arabic(prayer), Style = (Style)FindResource("ArabicText"), FontSize = 18, LineHeight = 24,
-            });
-            var adhan = new CheckBox { Content = "Adhan", Margin = new Thickness(0, 6, 16, 6) };
-            AutomationProperties.SetName(adhan, $"{PrayerNames.English(prayer)} Adhan");
+                Style = (Style)FindResource("IconButton"), Width = 34, Height = 34, Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center, ToolTip = $"Preview the {name} Adhan",
+                Content = new System.Windows.Shapes.Path
+                {
+                    Data = Geometry.Parse("M7,4 L20,12 L7,20 Z"), Fill = (Brush)FindResource("GoldBrush"), Width = 10, Height = 12, Stretch = Stretch.Uniform,
+                },
+            };
+            AutomationProperties.SetName(preview, $"Preview {name} Adhan");
+            preview.Click += (_, _) => _app.PlayAdhanPreview(PrayerSoundId(prayer));
+            var adhan = new CheckBox { VerticalAlignment = VerticalAlignment.Center, ToolTip = $"Play the Adhan at {name}" };
+            AutomationProperties.SetName(adhan, $"{name} Adhan");
             adhan.Click += OnAdhanChanged;
-            var reminder = new ComboBox { ItemsSource = reminderOptions, Margin = new Thickness(0, 6, 0, 6), MinWidth = 180, HorizontalAlignment = HorizontalAlignment.Right };
-            AutomationProperties.SetName(reminder, $"{PrayerNames.English(prayer)} reminder");
+            AddToRow(PerPrayerGrid, row, label, sound, preview, adhan);
+
+            // Notifications: an optional reminder before the prayer.
+            RemindersGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var reminder = new ComboBox { ItemsSource = reminderOptions, Margin = new Thickness(0, 6, 0, 6), MinWidth = 150, HorizontalAlignment = HorizontalAlignment.Right };
+            AutomationProperties.SetName(reminder, $"{name} reminder");
             reminder.SelectionChanged += OnAdhanChanged;
-            Grid.SetRow(label, row);
-            Grid.SetRow(adhan, row);
-            Grid.SetColumn(adhan, 1);
-            Grid.SetRow(reminder, row);
-            Grid.SetColumn(reminder, 2);
-            PerPrayerGrid.Children.Add(label);
-            PerPrayerGrid.Children.Add(adhan);
-            PerPrayerGrid.Children.Add(reminder);
-            _perPrayer[prayer] = (adhan, reminder);
+            AddToRow(RemindersGrid, row, PrayerLabel(prayer), reminder);
+
+            _perPrayer[prayer] = new PrayerAdhanControls(adhan, sound, preview, reminder);
             row++;
         }
 
         SoundBox.ItemsSource = _app.Sounds.Adhans;
-        FajrSoundBox.ItemsSource = _app.Sounds.Adhans;
+
+        WireNumberBox(FajrAngleBox);
+        WireNumberBox(IshaAngleBox);
+        _numberCommit.Tick += (_, _) =>
+        {
+            _committingWhileTyping = true;
+            try
+            {
+                CommitNumbers();
+            }
+            finally
+            {
+                _committingWhileTyping = false;
+            }
+        };
     }
+
+    /// <summary>
+    /// Number boxes save after a short pause in typing, on Enter, and when focus leaves.
+    /// Previously they saved only on leaving the box, so a typed offset seemed to do nothing.
+    /// </summary>
+    private void WireNumberBox(TextBox box)
+    {
+        box.TextChanged += (_, _) =>
+        {
+            if (!_loading && IsLoaded)
+            {
+                _numberCommit.Stop();
+                _numberCommit.Start();
+            }
+        };
+        box.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitNumbers();
+                box.SelectAll();
+                e.Handled = true;
+            }
+        };
+        box.LostFocus += (_, _) => CommitNumbers();
+    }
+
+    private void CommitNumbers()
+    {
+        _numberCommit.Stop();
+        OnCalculationChanged(this, new RoutedEventArgs());
+    }
+
+    /// <summary>Shows a saved value, but never rewrites a box mid-typing (that would move the caret).</summary>
+    private void ShowNumber(TextBox box, double value)
+    {
+        if (!(_committingWhileTyping && box.IsKeyboardFocusWithin))
+        {
+            box.Text = value.ToString(CultureInfo.CurrentCulture);
+        }
+    }
+
+    private StackPanel PrayerLabel(Prayer prayer)
+    {
+        var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0) };
+        label.Children.Add(new TextBlock { Text = PrayerNames.English(prayer), FontWeight = FontWeights.SemiBold, Width = 64, VerticalAlignment = VerticalAlignment.Center });
+        label.Children.Add(new TextBlock
+        {
+            Text = PrayerNames.Arabic(prayer), Style = (Style)FindResource("ArabicText"), FontSize = 18, LineHeight = 24, MinWidth = 44,
+        });
+        return label;
+    }
+
+    private static void AddToRow(Grid grid, int row, params UIElement[] cells)
+    {
+        for (var column = 0; column < cells.Length; column++)
+        {
+            Grid.SetRow(cells[column], row);
+            Grid.SetColumn(cells[column], column);
+            grid.Children.Add(cells[column]);
+        }
+    }
+
+    /// <summary>"Default · Adhan 1" first, then every recording; the Default label follows the current Default Adhan.</summary>
+    private List<Option<string?>> PrayerSoundOptions(string defaultSoundId)
+    {
+        var options = new List<Option<string?>> { new(null, $"Default · {_app.Sounds.FindAdhan(defaultSoundId)?.Name ?? "none"}") };
+        options.AddRange(_app.Sounds.Adhans.Select(a => new Option<string?>(a.Id, a.Name)));
+        return options;
+    }
+
+    /// <summary>What the prayer's row would play right now: its own recording or the Default Adhan.</summary>
+    private string PrayerSoundId(Prayer prayer) =>
+        Selected<string?>(_perPrayer[prayer].Sound, null) ?? (SoundBox.SelectedItem as AdhanSound)?.Id ?? _app.Settings.Adhan.DefaultSoundId;
 
     private static void Select<T>(ComboBox box, T value) =>
         box.SelectedItem = box.ItemsSource?.OfType<Option<T>>().FirstOrDefault(o => EqualityComparer<T>.Default.Equals(o.Value, value));
@@ -1127,8 +1240,8 @@ public partial class MainWindow : Window
             var c = s.Calculation;
             Select(MethodBox, c.Method);
             CustomAnglesPanel.Visibility = c.Method == CalculationMethod.Custom ? Visibility.Visible : Visibility.Collapsed;
-            FajrAngleBox.Text = c.CustomFajrAngle.ToString(CultureInfo.CurrentCulture);
-            IshaAngleBox.Text = c.CustomIshaAngle.ToString(CultureInfo.CurrentCulture);
+            ShowNumber(FajrAngleBox, c.CustomFajrAngle);
+            ShowNumber(IshaAngleBox, c.CustomIshaAngle);
             MadhabStandard.IsChecked = c.Madhab == Madhab.Shafi;
             MadhabHanafi.IsChecked = c.Madhab == Madhab.Hanafi;
             Select(HighLatBox, c.HighLatitudeRule);
@@ -1136,12 +1249,12 @@ public partial class MainWindow : Window
             Select(HijriOffsetBox, c.HijriDayOffset);
             Select(ImsakBox, s.Ramadan.ImsakMinutesBeforeFajr);
             var adj = c.Adjustments;
-            _adjustments[Prayer.Fajr].Text = adj.Fajr.ToString(CultureInfo.CurrentCulture);
-            _adjustments[Prayer.Sunrise].Text = adj.Sunrise.ToString(CultureInfo.CurrentCulture);
-            _adjustments[Prayer.Dhuhr].Text = adj.Dhuhr.ToString(CultureInfo.CurrentCulture);
-            _adjustments[Prayer.Asr].Text = adj.Asr.ToString(CultureInfo.CurrentCulture);
-            _adjustments[Prayer.Maghrib].Text = adj.Maghrib.ToString(CultureInfo.CurrentCulture);
-            _adjustments[Prayer.Isha].Text = adj.Isha.ToString(CultureInfo.CurrentCulture);
+            ShowNumber(_adjustments[Prayer.Fajr], adj.Fajr);
+            ShowNumber(_adjustments[Prayer.Sunrise], adj.Sunrise);
+            ShowNumber(_adjustments[Prayer.Dhuhr], adj.Dhuhr);
+            ShowNumber(_adjustments[Prayer.Asr], adj.Asr);
+            ShowNumber(_adjustments[Prayer.Maghrib], adj.Maghrib);
+            ShowNumber(_adjustments[Prayer.Isha], adj.Isha);
             MethodHint.Text = s.Location?.CountryCode is { } country && !c.MethodChosenByUser
                 ? $"Suggested for your country ({country}). Match your local masjid if it differs."
                 : "Match the method your local masjid uses.";
@@ -1150,16 +1263,20 @@ public partial class MainWindow : Window
             AdhanEnabledBox.IsChecked = a.Enabled;
             SidebarAdhanSwitch.IsChecked = RailAdhanSwitch.IsChecked = a.Enabled;
             RailAdhanSwitch.ToolTip = a.Enabled ? "Adhan is on" : "Adhan is off";
-            SoundBox.SelectedItem = _app.Sounds.Adhans.FirstOrDefault(x => x.Id == a.DefaultSoundId) ?? _app.Sounds.Adhans.FirstOrDefault();
-            FajrSoundBox.SelectedItem = _app.Sounds.Adhans.FirstOrDefault(x => x.Id == a.FajrSoundId) ?? _app.Sounds.Adhans.FirstOrDefault();
+            SoundBox.SelectedItem = _app.Sounds.FindAdhan(a.DefaultSoundId);
+            SoundBox.IsEnabled = a.Enabled;
             VolumeSlider.Value = a.Volume;
             VolumeText.Text = $"{a.Volume}%";
-            foreach (var (prayer, (adhan, reminder)) in _perPrayer)
+            foreach (var (prayer, row) in _perPrayer)
             {
                 var alert = a.For(prayer);
-                adhan.IsChecked = alert.AdhanEnabled;
-                adhan.IsEnabled = a.Enabled;
-                Select(reminder, alert.ReminderMinutesBefore);
+                row.Adhan.IsChecked = alert.AdhanEnabled;
+                row.Adhan.IsEnabled = a.Enabled;
+                row.Sound.ItemsSource = PrayerSoundOptions(a.DefaultSoundId);
+                // An override saved under an older ID shows as the recording it maps to.
+                Select(row.Sound, alert.SoundId is null ? null : _app.Sounds.FindAdhan(alert.SoundId)?.Id);
+                row.Sound.IsEnabled = row.Preview.IsEnabled = a.Enabled && alert.AdhanEnabled;
+                Select(row.Reminder, alert.ReminderMinutesBefore);
             }
 
             VoiceRemindersBox.IsChecked = s.Ramadan.VoiceRemindersEnabled;
@@ -1234,16 +1351,18 @@ public partial class MainWindow : Window
             {
                 Enabled = AdhanEnabledBox.IsChecked == true,
                 DefaultSoundId = (SoundBox.SelectedItem as AdhanSound)?.Id ?? s.Adhan.DefaultSoundId,
-                FajrSoundId = (FajrSoundBox.SelectedItem as AdhanSound)?.Id ?? s.Adhan.FajrSoundId,
                 QuietDuringFullScreen = QuietFullScreenBox.IsChecked == true,
                 ShowNotifications = NotificationsBox.IsChecked == true,
             };
-            foreach (var (prayer, (box, reminder)) in _perPrayer)
+            foreach (var (prayer, row) in _perPrayer)
             {
-                adhan = adhan.With(prayer, adhan.For(prayer) with
+                var alert = adhan.For(prayer);
+                adhan = adhan.With(prayer, alert with
                 {
-                    AdhanEnabled = box.IsChecked == true,
-                    ReminderMinutesBefore = Selected(reminder, 0),
+                    AdhanEnabled = row.Adhan.IsChecked == true,
+                    // Null keeps following the Default Adhan, so changing the default reaches this prayer.
+                    SoundId = row.Sound.SelectedItem is Option<string?> o ? o.Value : alert.SoundId,
+                    ReminderMinutesBefore = Selected(row.Reminder, 0),
                 });
             }
 
@@ -1262,9 +1381,6 @@ public partial class MainWindow : Window
 
     private void OnTestSound(object sender, RoutedEventArgs e) =>
         _app.PlayAdhanPreview((SoundBox.SelectedItem as AdhanSound)?.Id ?? _app.Settings.Adhan.DefaultSoundId);
-
-    private void OnTestFajrSound(object sender, RoutedEventArgs e) =>
-        _app.PlayAdhanPreview((FajrSoundBox.SelectedItem as AdhanSound)?.Id ?? _app.Settings.Adhan.FajrSoundId);
 
     private void OnStopSound(object sender, RoutedEventArgs e) => _app.StopAudio();
 

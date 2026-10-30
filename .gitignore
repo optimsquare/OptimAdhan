@@ -14,3 +14,7 @@ PrayerAndRamadan/
 
 # Internal notes that must not be published.
 private/
+
+# Source Adhan recordings: licences unconfirmed, so keep them out of the public repository.
+# The app ships the packed copies in src/OptimAdhan.App/Assets/Audio/Adhan (see docs/AUDIO.md).
+assets/audio/adhan-source/*.mp3

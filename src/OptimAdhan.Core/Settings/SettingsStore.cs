@@ -46,7 +46,7 @@ public sealed class SettingsStore
             try
             {
                 var json = File.ReadAllText(_path);
-                return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                return (JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings()).Migrate();
             }
             catch (JsonException)
             {

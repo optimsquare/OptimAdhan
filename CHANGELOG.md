@@ -3,6 +3,32 @@
 All notable changes to OptimAdhan. Versions follow `<Version>` in `src/OptimAdhan.App/OptimAdhan.App.csproj`,
 which also names the installer.
 
+## 0.4.0 — 2026-10-30
+
+### Adhan library and per-prayer recordings
+- Seven bundled recordings, shown only as **Adhan 1** to **Adhan 7**. Recording and reciter names no
+  longer appear anywhere in the app.
+- Recordings ship as packed `.oadh` files with their tags removed, decoded in memory at playback, so they
+  cannot be opened casually from the install folder. This is obfuscation, not DRM (docs/AUDIO.md).
+- Settings → Adhan and sounds: one **Default Adhan**, and for each prayer an on/off switch, a recording
+  ("Default · Adhan N" or a specific one) and a preview button. Prayers on Default follow any change of
+  the Default Adhan; prayers with their own recording keep it.
+- Per-prayer reminders moved to the Notifications card, next to the "Prayer reminders" switch.
+- Settings from 0.3.x carry over: Makkah and Madinah map to Adhan 5 and 6, and a Fajr sound that
+  differed from the default becomes Fajr's own choice. New installs default to Adhan 1.
+- Today shows just **Adhan On** (emerald) or **Adhan Off** (coral, crossed speaker).
+- While audio plays, the tray tooltip points to Stop Adhan in the tray menu.
+
+### Fixes
+- Settings → Prayer times → Fine-tune: minute adjustments (and custom Fajr/Isha angles) now save as you
+  type, after a short pause, or at once with Enter. Before, they saved only when focus left the box, so
+  a typed offset often seemed to do nothing. Out-of-range values are still capped at ±120 minutes.
+- The volume and widget-opacity sliders are gold, like the rest of the app, instead of the Windows accent colour.
+
+### Installer
+- Still self-contained (.NET 10 runtime included) with the same upgrade code, so it replaces 0.3.x in place;
+  settings, shortcuts and the sign-in entry carry over.
+
 ## 0.3.1 — 2026-10-30
 
 ### Installer: no prerequisites

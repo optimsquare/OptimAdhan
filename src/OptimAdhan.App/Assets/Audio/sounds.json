@@ -1,8 +1,13 @@
 {
-  "_comment": "Sound library. Replace or add files here without rebuilding. Paths are relative to this folder. Supported: mp3, wav, m4a, wma.",
+  "_comment": "Sound library. Paths are relative to this folder. Bundled Adhans are packed .oadh files made by tools/pack-adhan-audio.cs; plain mp3, wav, m4a or wma files also work, so licensed recordings can be added without rebuilding. Names are shown to users; 'aliases' keep IDs saved by older versions working.",
   "adhan": [
-    { "id": "makkah", "name": "Makkah", "file": "Adhan/adhan-makkah.mp3", "fajr": false },
-    { "id": "madina", "name": "Madinah", "file": "Adhan/adhan-madina.mp3", "fajr": false }
+    { "id": "adhan-1", "name": "Adhan 1", "file": "Adhan/adhan-1.oadh" },
+    { "id": "adhan-2", "name": "Adhan 2", "file": "Adhan/adhan-2.oadh" },
+    { "id": "adhan-3", "name": "Adhan 3", "file": "Adhan/adhan-3.oadh" },
+    { "id": "adhan-4", "name": "Adhan 4", "file": "Adhan/adhan-4.oadh" },
+    { "id": "adhan-5", "name": "Adhan 5", "file": "Adhan/adhan-5.oadh", "aliases": [ "makkah" ] },
+    { "id": "adhan-6", "name": "Adhan 6", "file": "Adhan/adhan-6.oadh", "aliases": [ "madina" ] },
+    { "id": "adhan-7", "name": "Adhan 7", "file": "Adhan/adhan-7.oadh" }
   ],
   "reminders": {
     "sehri_15_min_before": "Reminders/sehri_15_min_before.wav",

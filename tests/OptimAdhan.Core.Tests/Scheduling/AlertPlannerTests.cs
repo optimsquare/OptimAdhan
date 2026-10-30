@@ -33,12 +33,24 @@ public class AlertPlannerTests
     }
 
     [Fact]
-    public void FajrUsesItsOwnSound()
+    public void PrayersFollowTheDefaultAdhanUnlessOverridden()
     {
-        var alerts = PlanDay(new DateOnly(2026, 10, 28), new AdhanSettings { DefaultSoundId = "madina", FajrSoundId = "fajr" });
+        var adhan = new AdhanSettings { DefaultSoundId = "adhan-3", Fajr = new PrayerAlert { SoundId = "adhan-7" } };
+        var alerts = PlanDay(new DateOnly(2026, 10, 28), adhan);
 
-        Assert.Equal("fajr", alerts.Single(a => a.Prayer == Prayer.Fajr).SoundId);
-        Assert.Equal("madina", alerts.Single(a => a.Prayer == Prayer.Asr).SoundId);
+        Assert.Equal("adhan-7", alerts.Single(a => a.Prayer == Prayer.Fajr).SoundId);
+        Assert.All(alerts.Where(a => a.Prayer != Prayer.Fajr), a => Assert.Equal("adhan-3", a.SoundId));
+    }
+
+    [Fact]
+    public void ChangingTheDefaultLeavesOverridesAlone()
+    {
+        var adhan = new AdhanSettings { DefaultSoundId = "adhan-1", Isha = new PrayerAlert { SoundId = "adhan-2" } };
+        var changed = adhan with { DefaultSoundId = "adhan-4" };
+
+        Assert.Equal("adhan-4", changed.SoundFor(Prayer.Dhuhr));
+        Assert.Equal("adhan-4", changed.SoundFor(Prayer.Fajr));
+        Assert.Equal("adhan-2", changed.SoundFor(Prayer.Isha));
     }
 
     [Fact]

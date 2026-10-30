@@ -396,8 +396,8 @@ public sealed class Dashboard : Observable
     {
         var adhan = _app.Settings.Adhan;
         AdhanOn = adhan.Enabled;
-        var sound = _app.Sounds.Adhans.FirstOrDefault(a => a.Id == adhan.DefaultSoundId)?.Name ?? "Adhan";
-        AdhanStatus = adhan.Enabled ? $"Adhan on · {sound}" : "Adhan off";
+        // Only on or off: which recording plays for each prayer belongs in Settings.
+        AdhanStatus = adhan.Enabled ? "Adhan On" : "Adhan Off";
     }
 
     private void UpdateRamadan(PrayerScheduleService schedule, DaySchedule today, DateTime utcNow, bool use24)

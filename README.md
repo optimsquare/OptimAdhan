@@ -52,8 +52,8 @@ and plays the Adhan at each prayer, even with every window closed.
 - Hijri date (Umm al-Qura), adjustable by up to two days for local moonsighting
 
 **Adhan and reminders**
-- The Adhan from Makkah or Madinah, with a separate Fajr Adhan and a volume control
-- Per-prayer Adhan switches and optional reminders 5 to 30 minutes before
+- A library of Adhan recordings: pick one Default Adhan, then keep it or choose another for each prayer
+- Per-prayer Adhan switches, previews, a volume control and optional reminders 5 to 30 minutes before
 - Mute the next Adhan, or everything for an hour, from the tray, and optionally stay quiet during
   full-screen presentations and games
 - A compact "Now playing" card with Stop and Mute
@@ -152,9 +152,9 @@ powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 | Start at sign-in | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\OptimAdhan` |
 | Sounds (replaceable) | `<install folder>\Assets\Audio\sounds.json` and audio files |
 
-**Replacing the Adhan recordings:** put the new files in `src/OptimAdhan.App/Assets/Audio/Adhan/` and list
-them in `Assets/Audio/sounds.json` (id, name, file). No code changes are needed. Settings refer to sounds by
-`id`, so keep `makkah` and `madina`, or users fall back to the first sound listed.
+**Adhan recordings:** see [docs/AUDIO.md](docs/AUDIO.md) for the library, the packed `.oadh` format and how
+to add or replace recordings. Plain MP3/WAV files listed in `Assets/Audio/sounds.json` also work, with no code
+changes.
 
 **Brand assets:** the app uses the official artwork from `assets/`, copied into
 `src/OptimAdhan.App/Assets/Brand/`. To update the branding, replace those files and rebuild.

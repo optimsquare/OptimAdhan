@@ -85,10 +85,11 @@ days either side of Ramadan 1447–1449.
   The widget redraws once a second only while it is visible.
 
 ### D7. Audio
-WPF `MediaPlayer` (Windows Media Foundation: MP3, WAV, AAC/M4A, WMA), with no extra
-dependency. Sounds are listed in `Assets/Audio/sounds.json`, so licensed recordings can be
-dropped in later without code changes. Fajr has its own sound setting. The development
-build uses the web app's recordings (see ACCURACY.md for their limits).
+The Windows media player (`Windows.Media.Playback`, Media Foundation: MP3, WAV, AAC/M4A, WMA),
+with no extra dependency. Sounds are listed in `Assets/Audio/sounds.json`, so licensed recordings
+can be dropped in later without code changes. Bundled Adhans ship as packed `.oadh` files that are
+decoded in memory, never to disk (see [AUDIO.md](AUDIO.md)). Users pick one Default Adhan; each
+prayer follows it or names its own recording, and can be switched off.
 
 ### D8. Notifications
 Our own small, always-on-top "Adhan playing" panel with **Stop** and **Mute**, plus tray

@@ -73,6 +73,8 @@ public sealed class TrayIcon : IDisposable
         _tooltipTimer.Tick += (_, _) => UpdateTooltip();
         _tooltipTimer.Start();
         _app.SettingsChanged += (_, _) => UpdateTooltip();
+        // A hidden Adhan alert leaves the tray as the place to stop it; say so while sound plays.
+        _app.AudioStateChanged += (_, _) => UpdateTooltip();
         UpdateTooltip();
     }
 
@@ -130,7 +132,9 @@ public sealed class TrayIcon : IDisposable
 
     private void UpdateTooltip()
     {
-        var text = NextPrayerText() is { } next ? $"{AppInfo.ProductName}\n{next}" : $"{AppInfo.ProductName} — set your location";
+        var text = _app.Audio.IsPlaying ? $"{AppInfo.ProductName}\nAdhan is playing · right-click to stop"
+            : NextPrayerText() is { } next ? $"{AppInfo.ProductName}\n{next}"
+            : $"{AppInfo.ProductName} — set your location";
         _icon.Text = text.Length > 127 ? text[..127] : text;
     }
 

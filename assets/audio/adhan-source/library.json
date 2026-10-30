@@ -1,0 +1,12 @@
+{
+  "_comment": "Source recording for each bundled Adhan. Run tools/pack-adhan-audio.cs after changing this file. The source files are never modified; see docs/AUDIO.md.",
+  "adhan": [
+    { "id": "adhan-1", "source": "e9bb86af0d30.mp3" },
+    { "id": "adhan-2", "source": "166d1f7c435a.mp3" },
+    { "id": "adhan-3", "source": "a4ab138564ce.mp3" },
+    { "id": "adhan-4", "source": "768559b47c2e.mp3" },
+    { "id": "adhan-5", "source": "adhan-makkah.mp3" },
+    { "id": "adhan-6", "source": "adhan-madina.mp3" },
+    { "id": "adhan-7", "source": "ddb21f7363eb.mp3" }
+  ]
+}

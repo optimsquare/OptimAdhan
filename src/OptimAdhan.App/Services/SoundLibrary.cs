@@ -4,7 +4,16 @@ using System.Text.Json.Serialization;
 
 namespace OptimAdhan.App.Services;
 
-public sealed record AdhanSound(string Id, string Name, string Path);
+/// <param name="Name">Generic display name ("Adhan 1"); recordings are never named after their source.</param>
+public sealed record AdhanSound(string Id, string Name, string Path, IReadOnlyList<string> Aliases)
+{
+    /// <summary>What screen readers and UI Automation report for a list item: never the file path.</summary>
+    public override string ToString() => Name;
+
+    public bool Matches(string? id) =>
+        string.Equals(Id, id, StringComparison.OrdinalIgnoreCase)
+        || Aliases.Any(a => string.Equals(a, id, StringComparison.OrdinalIgnoreCase));
+}
 
 /// <summary>
 /// Reads Assets/Audio/sounds.json, so recordings can be replaced or added
@@ -34,7 +43,7 @@ public sealed class SoundLibrary
             new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? new Manifest();
 
         var adhans = manifest.Adhan
-            .Select(a => new AdhanSound(a.Id, a.Name, System.IO.Path.Combine(audioFolder, a.File)))
+            .Select(a => new AdhanSound(a.Id, a.Name, System.IO.Path.Combine(audioFolder, a.File), a.Aliases))
             .Where(a => File.Exists(a.Path))
             .ToList();
 
@@ -46,9 +55,11 @@ public sealed class SoundLibrary
         return new SoundLibrary(adhans, reminders);
     }
 
+    /// <summary>The sound for an ID (or an older ID it replaced), falling back to the first available sound.</summary>
+    public AdhanSound? FindAdhan(string? id) => Adhans.FirstOrDefault(a => a.Matches(id)) ?? Adhans.FirstOrDefault();
+
     /// <summary>Path for an Adhan sound ID, falling back to the first available sound.</summary>
-    public string? AdhanPath(string? id) =>
-        (Adhans.FirstOrDefault(a => string.Equals(a.Id, id, StringComparison.OrdinalIgnoreCase)) ?? Adhans.FirstOrDefault())?.Path;
+    public string? AdhanPath(string? id) => FindAdhan(id)?.Path;
 
     public string? ReminderPath(string? id) => id is not null && _reminders.TryGetValue(id, out var path) ? path : null;
 
@@ -66,6 +77,8 @@ public sealed class SoundLibrary
         public string Name { get; set; } = "";
 
         public string File { get; set; } = "";
+
+        public List<string> Aliases { get; set; } = [];
 
         [JsonPropertyName("fajr")] public bool SuitableForFajr { get; set; }
     }

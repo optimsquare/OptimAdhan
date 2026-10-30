@@ -72,6 +72,53 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Version1FajrSoundBecomesFajrsOwnChoice()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SettingsPath,
+            "{ \"Version\": 1, \"Adhan\": { \"DefaultSoundId\": \"makkah\", \"FajrSoundId\": \"madina\", \"Asr\": { \"AdhanEnabled\": false } } }");
+
+        var store = new SettingsStore(SettingsPath);
+        var settings = store.Load();
+
+        Assert.Equal(AppSettings.CurrentVersion, settings.Version);
+        Assert.Equal("makkah", settings.Adhan.DefaultSoundId);
+        Assert.Equal("madina", settings.Adhan.SoundFor(Prayer.Fajr));
+        Assert.Equal("makkah", settings.Adhan.SoundFor(Prayer.Dhuhr));
+        Assert.False(settings.Adhan.Asr.AdhanEnabled);
+
+        store.Save(settings);
+        Assert.DoesNotContain("FajrSoundId", File.ReadAllText(SettingsPath));
+    }
+
+    [Fact]
+    public void Version1MatchingFajrSoundKeepsFollowingTheDefault()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SettingsPath,
+            "{ \"Version\": 1, \"Adhan\": { \"DefaultSoundId\": \"makkah\", \"FajrSoundId\": \"makkah\" } }");
+
+        var settings = new SettingsStore(SettingsPath).Load();
+
+        Assert.Null(settings.Adhan.Fajr.SoundId);
+        Assert.Equal("adhan-2", (settings.Adhan with { DefaultSoundId = "adhan-2" }).SoundFor(Prayer.Fajr));
+    }
+
+    [Fact]
+    public void PerPrayerSoundChoicesRoundTrip()
+    {
+        var store = new SettingsStore(SettingsPath);
+        var adhan = new AdhanSettings { DefaultSoundId = "adhan-3", Maghrib = new PrayerAlert { SoundId = "adhan-5", ReminderMinutesBefore = 10 } };
+
+        store.Save(new AppSettings { Adhan = adhan });
+        var loaded = store.Load().Adhan;
+
+        Assert.Equal(adhan.Maghrib, loaded.Maghrib);
+        Assert.Equal("adhan-3", loaded.SoundFor(Prayer.Asr));
+        Assert.Equal("adhan-5", loaded.SoundFor(Prayer.Maghrib));
+    }
+
+    [Fact]
     public void CorruptFileIsPreservedAndDefaultsUsed()
     {
         Directory.CreateDirectory(_dir);
