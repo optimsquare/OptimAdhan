@@ -142,6 +142,12 @@ public sealed record AdhanSettings
     /// <summary>When a full-screen app or presentation is active, show a notification instead of playing audio.</summary>
     public bool QuietDuringFullScreen { get; init; }
 
+    /// <summary>
+    /// After an Adhan plays to the end, recite the Dua after the Adhan (the same recording for every
+    /// prayer). Off by default; never played after an Adhan that was stopped, skipped or silent.
+    /// </summary>
+    public bool PlayDuaAfterAdhan { get; init; }
+
     public PrayerAlert For(Prayer prayer) => prayer switch
     {
         Prayer.Fajr => Fajr,

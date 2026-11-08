@@ -23,6 +23,29 @@ public sealed class SettingsStoreTests : IDisposable
         var settings = new SettingsStore(SettingsPath).Load();
         Assert.Null(settings.Location);
         Assert.True(settings.Adhan.Enabled);
+        Assert.False(settings.Adhan.PlayDuaAfterAdhan); // opt-in
+    }
+
+    [Fact]
+    public void DuaAfterAdhanPreferenceRoundTrips()
+    {
+        var store = new SettingsStore(SettingsPath);
+
+        store.Save(new AppSettings { Adhan = new AdhanSettings { PlayDuaAfterAdhan = true } });
+
+        Assert.True(store.Load().Adhan.PlayDuaAfterAdhan);
+    }
+
+    [Fact]
+    public void OlderFilesWithoutDuaPreferenceKeepItOff()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SettingsPath, "{ \"Version\": 2, \"Adhan\": { \"Volume\": 40 } }");
+
+        var settings = new SettingsStore(SettingsPath).Load();
+
+        Assert.Equal(40, settings.Adhan.Volume);
+        Assert.False(settings.Adhan.PlayDuaAfterAdhan);
     }
 
     [Fact]

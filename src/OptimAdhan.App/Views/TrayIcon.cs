@@ -132,7 +132,8 @@ public sealed class TrayIcon : IDisposable
 
     private void UpdateTooltip()
     {
-        var text = _app.Audio.IsPlaying ? $"{AppInfo.ProductName}\nAdhan is playing · right-click to stop"
+        var text = _app.IsDuaPlaying ? $"{AppInfo.ProductName}\nDua is playing · right-click to stop"
+            : _app.Audio.IsPlaying ? $"{AppInfo.ProductName}\nAdhan is playing · right-click to stop"
             : NextPrayerText() is { } next ? $"{AppInfo.ProductName}\n{next}"
             : $"{AppInfo.ProductName} — set your location";
         _icon.Text = text.Length > 127 ? text[..127] : text;
@@ -144,6 +145,7 @@ public sealed class TrayIcon : IDisposable
         _widget.Checked = _app.Settings.Widget.Visible;
         _widget.Enabled = _app.Schedule is not null;
         _stop.Enabled = _app.Audio.IsPlaying;
+        _stop.Text = _app.IsDuaPlaying ? "Stop Dua" : "Stop Adhan";
         _skipNext.Checked = _app.IsNextAdhanSkipped;
         _skipNext.Enabled = _app.Settings.Adhan.Enabled && _app.Schedule is not null;
         var muted = _app.MutedUntilUtc is { } until && until > DateTime.UtcNow;

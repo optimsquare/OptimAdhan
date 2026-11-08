@@ -14,7 +14,8 @@ namespace OptimAdhan.App.Views;
 /// <summary>
 /// Compact frosted-glass notification beside the notification area. While an
 /// Adhan plays it is a "now playing" card that lives exactly as long as that
-/// playback: it closes when the audio ends, is stopped or fails. Other alerts
+/// playback, and the Dua after it if one follows: it closes when the audio ends,
+/// is stopped or fails. Other alerts
 /// close on their own after a short while. It never takes focus, and unlike
 /// Windows notifications it is not silenced by Focus Assist.
 /// </summary>
@@ -38,6 +39,7 @@ public partial class AlertPopup : Window
     private readonly DispatcherTimer _progressTimer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(200) };
     private string _key = "";
     private int _session = -1; // the playback this card follows; -1 when not a now-playing card
+    private bool _isDua; // following the Dua that came after the Adhan
     private bool _closed;
     private Taskbar.Edge _edge = Taskbar.Edge.Bottom;
 
@@ -174,7 +176,14 @@ public partial class AlertPopup : Window
             return;
         }
 
-        // Our Adhan is over: finished, stopped (here, from the tray or elsewhere) or replaced.
+        // The Adhan played to the end and the Dua took over: same card, same Hide and Stop.
+        if (!_isDua && _app.IsDuaFollowing(_session))
+        {
+            FollowDua();
+            return;
+        }
+
+        // Our Adhan (or Dua) is over: finished, stopped (here, from the tray or elsewhere) or replaced.
         var failed = audio.Session == _session && audio.LastEnd == AudioPlayer.PlaybackEnd.Failed;
         _session = -1;
         _progressTimer.Stop();
@@ -188,10 +197,22 @@ public partial class AlertPopup : Window
         }
     }
 
+    private void FollowDua()
+    {
+        _isDua = true;
+        _session = _app.Audio.Session;
+        StatusText.Text = "Dua is playing";
+        StopButton.Content = "Stop Dua";
+        ProgressFill.Width = 0;
+        Progress.Visibility = Visibility.Collapsed; // back once the Dua's length is known
+        Log.Info($"Alert card for {_key} now follows the Dua");
+    }
+
     private void ShowError()
     {
-        Log.Info($"Adhan for {_key} failed to play; showing error briefly");
-        StatusText.Text = "The Adhan could not be played";
+        var what = _isDua ? "Dua" : "Adhan";
+        Log.Info($"{what} for {_key} failed to play; showing error briefly");
+        StatusText.Text = $"The {what} could not be played";
         StatusText.Foreground = (Brush)FindResource("CoralBrush");
         Equalizer.Visibility = Visibility.Collapsed;
         Progress.Visibility = Visibility.Collapsed;
@@ -316,7 +337,7 @@ public partial class AlertPopup : Window
         }
     }
 
-    /// <summary>Hide: the card goes away, the Adhan keeps playing (Stop Adhan stays in the tray menu).</summary>
+    /// <summary>Hide: the card goes away, the Adhan (and the Dua after it) keeps playing; Stop stays in the tray menu.</summary>
     private void OnHide(object sender, RoutedEventArgs e) => Dismiss();
 
     private void OnStop(object sender, RoutedEventArgs e)

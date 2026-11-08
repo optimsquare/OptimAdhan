@@ -19,15 +19,38 @@ files carry none of the original tags.
 All seven decode and play through Windows Media Foundation (checked on Windows 11). Lengths were
 measured with Media Foundation.
 
+### Dua after the Adhan
+
+| ID | File in the app | Length | Format of the source | Notes |
+|---|---|---|---|---|
+| `dua-after-adhan` | `Dua/dua-after-adhan.oadh` | 0:24 | WAV PCM 16-bit, 48 kHz stereo | One recording for all five prayers, whichever Adhan played |
+
+Played only when **Settings → Adhan and sounds → Play Dua After Adhan** is on (off by default), and only
+after an Adhan that played to the end: never after one that was stopped, muted, skipped, silent
+(full-screen quiet mode) or switched off, and never after a preview. The source WAV is kept unchanged in
+`assets/audio/dua-source/` (git-ignored, like the Adhan MP3s); packing drops only its `LIST/INFO` chunk
+(the encoder name), the samples are copied bit for bit.
+
+### Ramadan reminders
+
+The eight spoken Sehri and Iftar countdowns (WAV PCM 16-bit, 24 kHz mono, 6–11 s each) are packed the same
+way into `Reminders/<key>.oadh`, keyed as in `sounds.json` (`sehri_15_min_before` … `iftar_1_min_before`).
+Their WAVs carry no metadata, so the packed files unpack to the original bytes exactly. The originals are
+in `assets/audio/reminder-source/` (git-ignored; earlier versions of the repository contain them).
+
 ## How it fits together
 
 ```
 assets/audio/adhan-source/            originals, never modified (MP3s are git-ignored)
-  library.json                        which source becomes which adhan-N
-tools/pack-adhan-audio.cs             strips ID3 tags, packs, verifies the round trip
+  library.json                        which source becomes which adhan-N (and the Dua)
+assets/audio/dua-source/              the Dua's original WAV, never modified (git-ignored)
+assets/audio/reminder-source/         the spoken Ramadan reminder WAVs, never modified (git-ignored)
+tools/pack-adhan-audio.cs             strips MP3 tags / WAV metadata chunks, packs, verifies the round trip
 src/OptimAdhan.App/Assets/Audio/
   Adhan/adhan-1.oadh … adhan-7.oadh   what ships in the app and the MSI
-  sounds.json                         id, display name, file, aliases, Fajr flag
+  Dua/dua-after-adhan.oadh            the Dua after the Adhan
+  Reminders/<key>.oadh                the 8 spoken Sehri/Iftar countdowns (sehri_15_min_before …)
+  sounds.json                         id, display name, file, aliases, Fajr flag; "dua" file
 ```
 
 Settings store sound IDs only. `AdhanSettings.DefaultSoundId` is the Default Adhan; each prayer's

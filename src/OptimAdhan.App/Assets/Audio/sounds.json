@@ -1,5 +1,5 @@
 {
-  "_comment": "Sound library. Paths are relative to this folder. Bundled Adhans are packed .oadh files made by tools/pack-adhan-audio.cs; plain mp3, wav, m4a or wma files also work, so licensed recordings can be added without rebuilding. Names are shown to users; 'aliases' keep IDs saved by older versions working.",
+  "_comment": "Sound library. Paths are relative to this folder. Bundled Adhans, the Dua and the reminders are packed .oadh files made by tools/pack-adhan-audio.cs; plain mp3, wav, m4a or wma files also work, so licensed recordings can be added without rebuilding. 'dua' is the Dua after the Adhan, the same for every prayer. Names are shown to users; 'aliases' keep IDs saved by older versions working.",
   "adhan": [
     { "id": "adhan-1", "name": "Adhan 1", "file": "Adhan/adhan-1.oadh" },
     { "id": "adhan-2", "name": "Adhan 2", "file": "Adhan/adhan-2.oadh" },
@@ -9,14 +9,15 @@
     { "id": "adhan-6", "name": "Adhan 6", "file": "Adhan/adhan-6.oadh", "aliases": [ "madina" ] },
     { "id": "adhan-7", "name": "Adhan 7", "file": "Adhan/adhan-7.oadh" }
   ],
+  "dua": "Dua/dua-after-adhan.oadh",
   "reminders": {
-    "sehri_15_min_before": "Reminders/sehri_15_min_before.wav",
-    "sehri_10_min_before": "Reminders/sehri_10_min_before.wav",
-    "sehri_5_min_before": "Reminders/sehri_5_min_before.wav",
-    "sehri_1_min_before": "Reminders/sehri_1_min_before.wav",
-    "sehri_end": "Reminders/sehri_end.wav",
-    "iftar_10_min_before": "Reminders/iftar_10_min_before.wav",
-    "iftar_5_min_before": "Reminders/iftar_5_min_before.wav",
-    "iftar_1_min_before": "Reminders/iftar_1_min_before.wav"
+    "sehri_15_min_before": "Reminders/sehri_15_min_before.oadh",
+    "sehri_10_min_before": "Reminders/sehri_10_min_before.oadh",
+    "sehri_5_min_before": "Reminders/sehri_5_min_before.oadh",
+    "sehri_1_min_before": "Reminders/sehri_1_min_before.oadh",
+    "sehri_end": "Reminders/sehri_end.oadh",
+    "iftar_10_min_before": "Reminders/iftar_10_min_before.oadh",
+    "iftar_5_min_before": "Reminders/iftar_5_min_before.oadh",
+    "iftar_1_min_before": "Reminders/iftar_1_min_before.oadh"
   }
 }

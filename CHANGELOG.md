@@ -3,6 +3,28 @@
 All notable changes to OptimAdhan. Versions follow `<Version>` in `src/OptimAdhan.App/OptimAdhan.App.csproj`,
 which also names the installer.
 
+## 0.5.0 — 2026-11-07
+
+### Play Dua After Adhan
+- New switch in Settings → Adhan and sounds: **Play Dua After Adhan**. Off by default; the choice is saved
+  with your other settings (older settings files simply keep it off).
+- When on, the Dua is recited right after each Adhan that plays to the end. The same Dua plays for all five
+  prayers, whichever Adhan recording is chosen.
+- No Dua after an Adhan you stop, mute, skip or switch off, after a silent alert (quiet during full-screen
+  apps), or after a preview in Settings. It plays once per Adhan and never overlaps another sound. It uses the
+  Adhan volume. "Test the Adhan alert" plays the whole sequence.
+- The alert card stays open through the Dua and reads **Dua is playing**; Hide keeps working, and Stop
+  (**Stop Dua** on the card and in the tray menu) ends it. The card closes when the Dua ends or is stopped.
+- The recording ships as packed `Dua/dua-after-adhan.oadh` (about 4.4 MB), made with the same packing tool as
+  the Adhans. It is included in the app folder and the installer. The source WAV is kept unchanged outside
+  the app (docs/AUDIO.md).
+
+### Ramadan reminders packed
+- The eight spoken Sehri and Iftar countdowns now ship as packed `.oadh` files, like the Adhans and the Dua,
+  so they can no longer be opened from the install folder. Audio, timing and wording are unchanged; the packed
+  files decode to the original recordings byte for byte. The source WAVs moved out of the app to
+  `assets/audio/reminder-source/` and are no longer tracked in the repository.
+
 ## 0.4.0 — 2026-10-30
 
 ### Adhan library and per-prayer recordings

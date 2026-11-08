@@ -45,4 +45,32 @@ public sealed class PackedAudioTests
         Assert.Equal(FakeFrames, PackedAudio.StripId3Tags([.. id3v2, .. FakeFrames, .. id3v1]));
         Assert.Equal(FakeFrames, PackedAudio.StripId3Tags(FakeFrames));
     }
+
+    [Fact]
+    public void StripsWavMetadataChunksAndKeepsTheSamples()
+    {
+        // PCM, 2 channels, 48 kHz, 192000 bytes/s, block 4, 16-bit.
+        byte[] fmt = [.. "fmt "u8, 16, 0, 0, 0, 1, 0, 2, 0, 0x80, 0xBB, 0, 0, 0x00, 0xEE, 2, 0, 4, 0, 16, 0];
+        byte[] list = [.. "LIST"u8, 9, 0, 0, 0, .. "INFOISFT"u8, 0, 0]; // odd size 9, so one pad byte
+        byte[] data = [.. "data"u8, 8, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+        var stripped = PackedAudio.StripMetadata(Wav(fmt, list, data));
+
+        Assert.Equal(Wav(fmt, data), stripped);
+        Assert.Equal(stripped.Length - 8, BitConverter.ToInt32(stripped, 4));
+        Assert.Equal(Wav(fmt, data), PackedAudio.StripMetadata(Wav(fmt, data))); // nothing to remove
+    }
+
+    [Fact]
+    public void StripMetadataLeavesMp3FramesAlone()
+    {
+        Assert.Equal(FakeFrames, PackedAudio.StripMetadata(FakeFrames));
+        Assert.Equal(FakeFrames, PackedAudio.StripWavMetadata(FakeFrames));
+    }
+
+    private static byte[] Wav(params byte[][] chunks)
+    {
+        byte[] body = [.. "WAVE"u8, .. chunks.SelectMany(c => c)];
+        return [.. "RIFF"u8, .. BitConverter.GetBytes(body.Length), .. body];
+    }
 }

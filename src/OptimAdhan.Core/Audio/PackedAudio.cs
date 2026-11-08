@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+
 namespace OptimAdhan.Core.Audio;
 
 /// <summary>
@@ -49,6 +51,53 @@ public static class PackedAudio
         Mask(audio);
         return audio;
     }
+
+    /// <summary>Removes the tags of an MP3 or the metadata chunks of a WAV; see the two methods below.</summary>
+    public static byte[] StripMetadata(ReadOnlySpan<byte> audio) =>
+        IsWave(audio) ? StripWavMetadata(audio) : StripId3Tags(audio);
+
+    /// <summary>
+    /// Keeps only the chunks a WAV needs to play (<c>fmt </c>, <c>fact</c>, <c>data</c>), dropping
+    /// LIST/INFO (title, artist, encoder), ID3 and other metadata chunks, and fixes the RIFF size.
+    /// The audio samples are copied unchanged. Data that is not a WAV is returned unchanged.
+    /// </summary>
+    public static byte[] StripWavMetadata(ReadOnlySpan<byte> wav)
+    {
+        if (!IsWave(wav))
+        {
+            return wav.ToArray();
+        }
+
+        using var output = new MemoryStream(wav.Length);
+        output.Write(wav[..12]); // "RIFF", size (fixed below), "WAVE"
+        var position = 12;
+        while (wav.Length - position >= 8)
+        {
+            var id = wav.Slice(position, 4);
+            var size = BinaryPrimitives.ReadUInt32LittleEndian(wav.Slice(position + 4, 4));
+            var next = position + 8L + size + (size & 1); // chunks are padded to an even length
+            var keep = id.SequenceEqual("fmt "u8) || id.SequenceEqual("fact"u8) || id.SequenceEqual("data"u8);
+            if (keep)
+            {
+                // A truncated last chunk is kept as far as it goes.
+                output.Write(wav[position..(int)Math.Min(next, wav.Length)]);
+            }
+
+            if (next >= wav.Length)
+            {
+                break;
+            }
+
+            position = (int)next;
+        }
+
+        var result = output.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(4, 4), (uint)(result.Length - 8));
+        return result;
+    }
+
+    private static bool IsWave(ReadOnlySpan<byte> data) =>
+        data.Length >= 12 && data[..4].SequenceEqual("RIFF"u8) && data[8..12].SequenceEqual("WAVE"u8);
 
     /// <summary>
     /// Removes ID3v2 (leading) and ID3v1 (trailing) tags from an MP3, so titles,

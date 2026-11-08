@@ -1279,6 +1279,8 @@ public partial class MainWindow : Window
                 Select(row.Reminder, alert.ReminderMinutesBefore);
             }
 
+            DuaAfterAdhanBox.IsChecked = a.PlayDuaAfterAdhan;
+            DuaAfterAdhanBox.IsEnabled = a.Enabled && _app.Sounds.DuaPath is not null;
             VoiceRemindersBox.IsChecked = s.Ramadan.VoiceRemindersEnabled;
             QuietFullScreenBox.IsChecked = a.QuietDuringFullScreen;
             NotificationsBox.IsChecked = a.ShowNotifications;
@@ -1353,6 +1355,7 @@ public partial class MainWindow : Window
                 DefaultSoundId = (SoundBox.SelectedItem as AdhanSound)?.Id ?? s.Adhan.DefaultSoundId,
                 QuietDuringFullScreen = QuietFullScreenBox.IsChecked == true,
                 ShowNotifications = NotificationsBox.IsChecked == true,
+                PlayDuaAfterAdhan = DuaAfterAdhanBox.IsChecked == true,
             };
             foreach (var (prayer, row) in _perPrayer)
             {

@@ -90,6 +90,10 @@ with no extra dependency. Sounds are listed in `Assets/Audio/sounds.json`, so li
 can be dropped in later without code changes. Bundled Adhans ship as packed `.oadh` files that are
 decoded in memory, never to disk (see [AUDIO.md](AUDIO.md)). Users pick one Default Adhan; each
 prayer follows it or names its own recording, and can be switched off.
+An optional Dua after the Adhan (one recording for every prayer, off by default) is chained by
+`AppController` when an Adhan playback ends as *completed*; the player's per-playback session number
+means a stopped, replaced or failed Adhan can never start it, and it plays at most once per Adhan.
+The alert card follows the Dua as the same "now playing" card.
 
 ### D8. Notifications
 Our own small, always-on-top "Adhan playing" panel with **Stop** and **Mute**, plus tray

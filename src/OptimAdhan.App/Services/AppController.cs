@@ -21,6 +21,13 @@ public sealed class AppController : IDisposable
     private readonly AlertDispatcher _dispatcher = new();
     private readonly DispatcherTimer _timer;
 
+    // The Dua after the Adhan. Each playback has its own session number (AudioPlayer.Session), so a
+    // stopped, replaced or failed Adhan can never trigger it, and it plays at most once per Adhan.
+    private int _duaAfterSession = -1;   // the Adhan playback the Dua may follow
+    private Core.Calculation.Prayer? _duaPrayer;
+    private int _duaSession = -1;        // the Dua playback itself
+    private int _duaFollowsSession = -1; // the Adhan playback it followed
+
     public AppController(SettingsStore store, SoundLibrary sounds)
     {
         _store = store;
@@ -28,7 +35,7 @@ public sealed class AppController : IDisposable
         Settings = store.Load();
         Geocoder = new NominatimGeocoder($"OptimAdhan/{AppInfo.Version} (Windows desktop; +https://optimsquare.io)");
 
-        Audio.PlaybackStopped += (_, _) => AudioStateChanged?.Invoke(this, EventArgs.Empty);
+        Audio.PlaybackStopped += OnPlaybackStopped;
 
         _timer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = MaxSleep };
         _timer.Tick += (_, _) => Pump();
@@ -62,6 +69,12 @@ public sealed class AppController : IDisposable
     public DateTime? MutedUntilUtc => _dispatcher.MutedUntilUtc;
 
     public bool IsNextAdhanSkipped => _dispatcher.IsNextAdhanSkipped(DateTime.UtcNow);
+
+    /// <summary>True while the Dua after the Adhan is playing.</summary>
+    public bool IsDuaPlaying => Audio.IsPlaying && Audio.Session == _duaSession;
+
+    /// <summary>True while the Dua plays as the continuation of the given Adhan playback.</summary>
+    public bool IsDuaFollowing(int adhanSession) => IsDuaPlaying && _duaFollowsSession == adhanSession;
 
     public void Update(Func<AppSettings, AppSettings> change)
     {
@@ -221,6 +234,12 @@ public sealed class AppController : IDisposable
             if (path is not null && File.Exists(path))
             {
                 Audio.Play(path, Settings.Adhan.Volume);
+                if (alert.Kind == AlertKind.Adhan && Audio.IsPlaying)
+                {
+                    // Whether the Dua follows is decided when the Adhan ends, with the settings of that moment.
+                    _duaAfterSession = Audio.Session;
+                    _duaPrayer = alert.IsTest ? null : alert.Prayer; // a test plays whatever the prayer's switch
+                }
             }
             else if (alert.SoundId is not null)
             {
@@ -230,6 +249,50 @@ public sealed class AppController : IDisposable
 
         AlertRaised?.Invoke(this, occurrence with { Delivery = delivery });
         AudioStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Runs when any playback ends. An Adhan that played to the end is followed by the Dua (if
+    /// enabled), started before listeners hear about the end so the alert card can carry on.
+    /// </summary>
+    private void OnPlaybackStopped(object? sender, EventArgs e)
+    {
+        var ended = Audio.Session;
+        var followsAdhan = ended == _duaAfterSession && Audio.LastEnd == AudioPlayer.PlaybackEnd.Completed;
+        _duaAfterSession = -1; // one chance per Adhan
+        if (followsAdhan && DuaAllowed() is { } path)
+        {
+            _duaFollowsSession = ended;
+            Audio.Play(path, Settings.Adhan.Volume);
+            _duaSession = Audio.Session;
+            Log.Info(Audio.IsPlaying ? "Dua after the Adhan started" : "Dua after the Adhan could not start");
+        }
+
+        AudioStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>The Dua's path if it should play now: enabled, Adhan still on, not muted, not in quiet mode.</summary>
+    private string? DuaAllowed()
+    {
+        var adhan = Settings.Adhan;
+        var reason = !adhan.PlayDuaAfterAdhan ? null
+            : !adhan.Enabled || (_duaPrayer is { } p && !adhan.For(p).AdhanEnabled) ? "Adhan switched off"
+            : MutedUntilUtc is { } until && until > DateTime.UtcNow ? "muted"
+            : adhan.QuietDuringFullScreen && FullScreenDetector.IsFullScreenActive() ? "full-screen app active"
+            : Sounds.DuaPath is not { } path || !File.Exists(path) ? "recording not found"
+            : "";
+        if (reason is null)
+        {
+            return null; // feature off: nothing to log
+        }
+
+        if (reason.Length > 0)
+        {
+            Log.Info($"Dua after the Adhan not played: {reason}");
+            return null;
+        }
+
+        return Sounds.DuaPath;
     }
 
     private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)

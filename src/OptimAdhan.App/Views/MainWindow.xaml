@@ -942,6 +942,13 @@
                                                     </Grid.ColumnDefinitions>
                                                 </Grid>
                                             </Border>
+                                            <!-- One Dua recording for every prayer, whichever Adhan played. -->
+                                            <CheckBox x:Name="DuaAfterAdhanBox" Click="OnAdhanChanged" Margin="0,16,0,0" AutomationProperties.Name="Play Dua After Adhan">
+                                                <StackPanel>
+                                                    <TextBlock Text="Play Dua After Adhan" />
+                                                    <TextBlock Style="{StaticResource Hint}" Text="Recites the Dua when an Adhan finishes. Not played if you stop the Adhan." />
+                                                </StackPanel>
+                                            </CheckBox>
                                             <Button Content="Test the Adhan alert" Click="OnTestAlert" HorizontalAlignment="Left" Margin="0,16,0,0"
                                                     ToolTip="Plays the next prayer's Adhan and shows the alert exactly as it will appear at prayer time." />
                                         </StackPanel>

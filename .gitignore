@@ -18,3 +18,9 @@ private/
 # Source Adhan recordings: licences unconfirmed, so keep them out of the public repository.
 # The app ships the packed copies in src/OptimAdhan.App/Assets/Audio/Adhan (see docs/AUDIO.md).
 assets/audio/adhan-source/*.mp3
+
+# Source Dua recording (WAV, licence unconfirmed); the app ships Assets/Audio/Dua/dua-after-adhan.oadh.
+assets/audio/dua-source/*.wav
+
+# Source Ramadan reminder recordings (WAV); the app ships the packed Assets/Audio/Reminders/*.oadh.
+assets/audio/reminder-source/*.wav

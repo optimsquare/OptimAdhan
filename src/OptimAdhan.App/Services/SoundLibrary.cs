@@ -23,20 +23,24 @@ public sealed class SoundLibrary
 {
     private readonly Dictionary<string, string> _reminders;
 
-    private SoundLibrary(IReadOnlyList<AdhanSound> adhans, Dictionary<string, string> reminders)
+    private SoundLibrary(IReadOnlyList<AdhanSound> adhans, Dictionary<string, string> reminders, string? duaPath)
     {
         Adhans = adhans;
         _reminders = reminders;
+        DuaPath = duaPath;
     }
 
     public IReadOnlyList<AdhanSound> Adhans { get; }
+
+    /// <summary>The Dua after the Adhan (one recording for every prayer); null if it is not installed.</summary>
+    public string? DuaPath { get; }
 
     public static SoundLibrary Load(string audioFolder)
     {
         var manifestPath = System.IO.Path.Combine(audioFolder, "sounds.json");
         if (!File.Exists(manifestPath))
         {
-            return new SoundLibrary([], []);
+            return new SoundLibrary([], [], null);
         }
 
         var manifest = JsonSerializer.Deserialize<Manifest>(File.ReadAllText(manifestPath),
@@ -52,7 +56,9 @@ public sealed class SoundLibrary
             .Where(r => File.Exists(r.Path))
             .ToDictionary(r => r.Key, r => r.Path, StringComparer.OrdinalIgnoreCase);
 
-        return new SoundLibrary(adhans, reminders);
+        var duaPath = string.IsNullOrEmpty(manifest.Dua) ? null : System.IO.Path.Combine(audioFolder, manifest.Dua);
+
+        return new SoundLibrary(adhans, reminders, duaPath is not null && File.Exists(duaPath) ? duaPath : null);
     }
 
     /// <summary>The sound for an ID (or an older ID it replaced), falling back to the first available sound.</summary>
@@ -66,6 +72,8 @@ public sealed class SoundLibrary
     private sealed class Manifest
     {
         public List<Entry> Adhan { get; set; } = [];
+
+        public string? Dua { get; set; }
 
         public Dictionary<string, string> Reminders { get; set; } = [];
     }
